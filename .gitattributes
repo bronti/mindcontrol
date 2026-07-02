@@ -1,0 +1,8 @@
+# Keep line endings consistent (LF) across all platforms.
+# This stops the "LF will be replaced by CRLF" warnings on Windows.
+* text=auto eol=lf
+
+# Treat these as binary (never touch their bytes).
+*.png binary
+*.jpg binary
+*.exe binary
