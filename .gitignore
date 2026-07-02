@@ -1,0 +1,18 @@
+# === SECRETS — never commit these! ===
+.env
+google-cloud-key.json
+credentials.json
+*-key.json
+
+# === Compiled binaries ===
+*.exe
+/mindcontrol
+/bin/
+
+# === Local notes (not for the public repo) ===
+PROGRESS.md
+
+# === Misc ===
+.DS_Store
+Thumbs.db
+/vendor/

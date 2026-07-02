@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Makhi-Bot · daily questions</title>
+  <!-- Telegram script: gives the form access to the theme, buttons and sending data to the bot -->
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main class="card">
+    <h1 data-i18n="title">Daily questions</h1>
+    <p class="subtitle" data-i18n="subtitle">This is a form stub — we'll change the questions to fit you later.</p>
+
+    <form id="form">
+      <label class="field">
+        <span data-i18n="q_mood">How's your mood today?</span>
+        <select name="mood">
+          <option value="5" data-i18n="mood_5">😀 great</option>
+          <option value="4" data-i18n="mood_4">🙂 good</option>
+          <option value="3" data-i18n="mood_3" selected>😐 okay</option>
+          <option value="2" data-i18n="mood_2">😕 meh</option>
+          <option value="1" data-i18n="mood_1">😞 bad</option>
+        </select>
+      </label>
+
+      <label class="field">
+        <span data-i18n="q_energy">Energy level from 1 to 10?</span>
+        <input type="range" name="energy" min="1" max="10" value="5"
+               oninput="this.nextElementSibling.textContent = this.value">
+        <output>5</output>
+      </label>
+
+      <label class="field">
+        <span data-i18n="q_note">What was the main thing today?</span>
+        <textarea name="note" rows="3" data-i18n-placeholder="note_placeholder" placeholder="a few words..."></textarea>
+      </label>
+
+      <button type="submit" data-i18n="submit">Submit</button>
+    </form>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>

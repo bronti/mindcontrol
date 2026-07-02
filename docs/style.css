@@ -1,0 +1,86 @@
+/* Colors come from the Telegram theme; fallbacks apply when opened in a regular browser */
+:root {
+  --bg: var(--tg-theme-bg-color, #ffffff);
+  --text: var(--tg-theme-text-color, #1a1a1a);
+  --hint: var(--tg-theme-hint-color, #8a8a8a);
+  --accent: var(--tg-theme-button-color, #3390ec);
+  --accent-text: var(--tg-theme-button-text-color, #ffffff);
+  --field-bg: var(--tg-theme-secondary-bg-color, #f1f3f5);
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: -apple-system, "Segoe UI", Roboto, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  padding: 16px;
+}
+
+.card {
+  max-width: 480px;
+  margin: 0 auto;
+}
+
+h1 {
+  font-size: 22px;
+  margin: 8px 0 4px;
+}
+
+.subtitle {
+  color: var(--hint);
+  margin: 0 0 24px;
+  font-size: 14px;
+}
+
+.field {
+  display: block;
+  margin-bottom: 20px;
+}
+
+.field > span {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 500;
+}
+
+select,
+textarea,
+input[type="range"] {
+  width: 100%;
+  font-size: 16px;
+  font-family: inherit;
+}
+
+select,
+textarea {
+  padding: 12px;
+  border: none;
+  border-radius: 10px;
+  background: var(--field-bg);
+  color: var(--text);
+  resize: vertical;
+}
+
+output {
+  display: inline-block;
+  margin-top: 4px;
+  color: var(--hint);
+  font-size: 14px;
+}
+
+button {
+  width: 100%;
+  padding: 14px;
+  font-size: 16px;
+  font-weight: 600;
+  border: none;
+  border-radius: 10px;
+  background: var(--accent);
+  color: var(--accent-text);
+  cursor: pointer;
+  margin-top: 8px;
+}
+
+button:active { opacity: 0.85; }
