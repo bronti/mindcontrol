@@ -1,8 +1,6 @@
 # === SECRETS — never commit these! ===
 .env
 google-cloud-key.json
-credentials.json
-*-key.json
 
 # === Compiled binaries ===
 *.exe
