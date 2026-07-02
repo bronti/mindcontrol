@@ -39,11 +39,11 @@ func main() {
 		var reply string
 		switch text {
 		case "/start":
-			reply = t("start")
+			reply = translate("start")
 		case "/ping":
-			reply = t("ping")
+			reply = translate("ping")
 		default:
-			reply = fmt.Sprintf(t("unknown"), text)
+			reply = fmt.Sprintf(translate("unknown"), text)
 		}
 
 		msg := tgbotapi.NewMessage(update.Message.Chat.ID, reply)

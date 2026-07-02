@@ -33,18 +33,18 @@ if (tg) {
 }
 
 // Choose the language: the Telegram user's language if we support it, otherwise English.
-const userLang = tg && tg.initDataUnsafe && tg.initDataUnsafe.user && tg.initDataUnsafe.user.language_code;
-const LANG = translations[userLang] ? userLang : "en";
-const dict = translations[LANG];
+const userLanguage = tg && tg.initDataUnsafe && tg.initDataUnsafe.user && tg.initDataUnsafe.user.language_code;
+const language = translations[userLanguage] ? userLanguage : "en";
+const dict = translations[language];
 
-// Fill in every element marked with data-i18n / data-i18n-placeholder
+// Fill in every element marked with data-translate / data-translate-placeholder
 function applyTranslations() {
-  document.querySelectorAll("[data-i18n]").forEach((el) => {
-    const key = el.getAttribute("data-i18n");
+  document.querySelectorAll("[data-translate]").forEach((el) => {
+    const key = el.getAttribute("data-translate");
     if (dict[key]) el.textContent = dict[key];
   });
-  document.querySelectorAll("[data-i18n-placeholder]").forEach((el) => {
-    const key = el.getAttribute("data-i18n-placeholder");
+  document.querySelectorAll("[data-translate-placeholder]").forEach((el) => {
+    const key = el.getAttribute("data-translate-placeholder");
     if (dict[key]) el.placeholder = dict[key];
   });
 }

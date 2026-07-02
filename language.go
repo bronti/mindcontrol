@@ -2,10 +2,10 @@ package main
 
 import "os"
 
-// currentLang returns the selected UI language ("en" or "ru").
-// Set it with BOT_LANG in .env (defaults to "en" if unset or unknown).
-func currentLang() string {
-	if os.Getenv("BOT_LANG") == "ru" {
+// currentLanguage returns the selected interface language ("en" or "ru").
+// Set it with BOT_LANGUAGE in .env (defaults to "en" if unset or unknown).
+func currentLanguage() string {
+	if os.Getenv("BOT_LANGUAGE") == "ru" {
 		return "ru"
 	}
 	return "en"
@@ -26,10 +26,10 @@ var messages = map[string]map[string]string{
 	},
 }
 
-// t returns the string for the given key in the current language,
+// translate returns the string for the given key in the current language,
 // falling back to English if the key is missing in that language.
-func t(key string) string {
-	if s, ok := messages[currentLang()][key]; ok {
+func translate(key string) string {
+	if s, ok := messages[currentLanguage()][key]; ok {
 		return s
 	}
 	return messages["en"][key]
