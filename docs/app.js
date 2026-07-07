@@ -32,7 +32,8 @@ const translations = {
     yes: "Yes", no: "No",
 
     sec_meds: "Medications",
-    meds_hint: "Tick what you took and enter the dose in mg.",
+    meds_hint: "Pick what you took; the dose in mg is pre-filled and editable.",
+    med_add: "+ Add a medication…",
     med_lamotrigine: "Lamotrigine",
     med_olanzapine: "Olanzapine",
     med_fluoxetine: "Fluoxetine",
@@ -76,7 +77,8 @@ const translations = {
     yes: "Да", no: "Нет",
 
     sec_meds: "Лекарства",
-    meds_hint: "Отметь принятое и укажи дозу в мг.",
+    meds_hint: "Выбери принятое; доза в мг подставится сама, её можно поправить.",
+    med_add: "+ Добавить лекарство…",
     med_lamotrigine: "Ламотриджин",
     med_olanzapine: "Оланзапин",
     med_fluoxetine: "Флуоксетин",
@@ -126,17 +128,70 @@ form.querySelectorAll('input[type="range"]').forEach((range) => {
   sync();
 });
 
-// ---- Medications: enable the dose field only when the box is ticked ----
-form.querySelectorAll(".med").forEach((row) => {
-  const check = row.querySelector('input[type="checkbox"]');
-  const dose = row.querySelector('input[type="number"]');
-  const sync = () => {
-    dose.disabled = !check.checked;
-    if (!check.checked) dose.value = "";
-  };
-  check.addEventListener("change", sync);
-  sync();
+// ---- Medications: add from a dropdown, each with a pre-filled, editable dose ----
+// Default dose in mg per drug (leave a drug out for a blank default).
+const defaultDoses = {
+  Lamotrigine: "400",
+  Fluoxetine: "25",
+  Olanzapine: "3",
+};
+
+const medPicker = document.getElementById("medPicker");
+const medList = document.getElementById("medList");
+
+medPicker.addEventListener("change", () => {
+  const name = medPicker.value;
+  if (!name) return;
+
+  const option = medPicker.querySelector(`option[value="${name}"]`);
+  addMedicationRow(name, option.textContent, defaultDoses[name] || "");
+
+  // Hide the chosen drug from the list so it can't be added twice.
+  option.hidden = true;
+  option.disabled = true;
+  medPicker.value = ""; // back to the "+ Add…" placeholder
 });
+
+// Build one medication row: name, editable mg field, and a remove button.
+function addMedicationRow(name, label, dose) {
+  const row = document.createElement("div");
+  row.className = "med";
+  row.dataset.name = name;
+
+  const nameEl = document.createElement("span");
+  nameEl.className = "med-name";
+  nameEl.textContent = label;
+
+  const doseWrap = document.createElement("span");
+  doseWrap.className = "med-dose";
+  const doseInput = document.createElement("input");
+  doseInput.type = "number";
+  doseInput.min = "0";
+  doseInput.step = "0.5";
+  doseInput.inputMode = "decimal";
+  doseInput.placeholder = "0";
+  doseInput.value = dose;
+  const unit = document.createElement("span");
+  unit.className = "unit";
+  unit.textContent = dict.mg;
+  doseWrap.append(doseInput, unit);
+
+  const remove = document.createElement("button");
+  remove.type = "button";
+  remove.className = "med-remove";
+  remove.textContent = "×";
+  remove.setAttribute("aria-label", "remove");
+  remove.addEventListener("click", () => {
+    row.remove();
+    // Put the drug back into the dropdown.
+    const option = medPicker.querySelector(`option[value="${name}"]`);
+    option.hidden = false;
+    option.disabled = false;
+  });
+
+  row.append(nameEl, doseWrap, remove);
+  medList.append(row);
+}
 
 // ---- Sleep clock: draw the arc between bedtime and wake, show the duration ----
 const bedtime = form.bedtime;
@@ -192,15 +247,12 @@ bedtime.addEventListener("input", updateSleep);
 wake.addEventListener("input", updateSleep);
 updateSleep();
 
-// ---- Collect every medication that is ticked, with its dose ----
+// ---- Collect every medication row the user added, with its dose ----
 function collectMedications() {
   const meds = [];
-  form.querySelectorAll(".med").forEach((row) => {
-    const check = row.querySelector('input[type="checkbox"]');
-    if (check.checked) {
-      const dose = row.querySelector('input[type="number"]').value;
-      meds.push({ name: check.value, dose: dose });
-    }
+  medList.querySelectorAll(".med").forEach((row) => {
+    const dose = row.querySelector('input[type="number"]').value;
+    meds.push({ name: row.dataset.name, dose: dose });
   });
   return meds;
 }

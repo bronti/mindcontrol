@@ -116,10 +116,12 @@ input[type="number"] {
 .sleep-duration strong { font-size: 24px; margin-top: 2px; }
 
 /* ---- Sliders (1–10) ---- */
-.slider-head {
+/* Two-class selector so it beats `.field > span` and the flex layout actually applies. */
+.slider .slider-head {
   display: flex;
   justify-content: space-between;
   align-items: baseline;
+  gap: 12px;
 }
 .slider-head output {
   font-weight: 700;
@@ -174,36 +176,40 @@ input[type="range"] {
 .segmented.small { flex: none; width: 140px; }
 .segmented.small span { padding: 8px 10px; }
 
-/* ---- Medications ---- */
+/* ---- Medications (add from dropdown) ---- */
+.med-picker { margin-bottom: 12px; }
+
 .med {
   display: flex;
   align-items: center;
-  justify-content: space-between;
   gap: 12px;
   margin-bottom: 10px;
 }
-.med-check {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  cursor: pointer;
-  font-weight: 500;
-}
-.med-check input { width: 20px; height: 20px; accent-color: var(--accent); }
+.med-name { flex: 1; font-weight: 500; }
 .med-dose {
   display: flex;
   align-items: center;
   gap: 6px;
   flex: none;
-  width: 120px;
 }
 .med-dose input {
   width: 72px;
   padding: 8px 10px;
   text-align: right;
 }
-.med-dose input:disabled { opacity: 0.4; }
 .med-dose .unit { color: var(--hint); font-size: 14px; }
+.med-remove {
+  width: 32px;
+  height: 32px;
+  flex: none;
+  margin: 0;
+  padding: 0;
+  font-size: 20px;
+  line-height: 1;
+  border-radius: 8px;
+  background: var(--field-bg);
+  color: var(--hint);
+}
 
 /* ---- Submit ---- */
 button {

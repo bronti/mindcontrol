@@ -132,28 +132,20 @@
       <!-- ===== Medications ===== -->
       <section class="group">
         <h2 class="group-title" data-translate="sec_meds">Medications</h2>
-        <p class="hint" data-translate="meds_hint">Tick what you took and enter the dose in mg.</p>
+        <p class="hint" data-translate="meds_hint">Pick what you took; the dose in mg is pre-filled and editable.</p>
 
-        <div class="med">
-          <label class="med-check"><input type="checkbox" name="med" value="Lamotrigine"><span data-translate="med_lamotrigine">Lamotrigine</span></label>
-          <span class="med-dose"><input type="number" min="0" step="0.5" inputmode="decimal" placeholder="0" disabled><span class="unit" data-translate="mg">mg</span></span>
-        </div>
-        <div class="med">
-          <label class="med-check"><input type="checkbox" name="med" value="Olanzapine"><span data-translate="med_olanzapine">Olanzapine</span></label>
-          <span class="med-dose"><input type="number" min="0" step="0.5" inputmode="decimal" placeholder="0" disabled><span class="unit" data-translate="mg">mg</span></span>
-        </div>
-        <div class="med">
-          <label class="med-check"><input type="checkbox" name="med" value="Fluoxetine"><span data-translate="med_fluoxetine">Fluoxetine</span></label>
-          <span class="med-dose"><input type="number" min="0" step="0.5" inputmode="decimal" placeholder="0" disabled><span class="unit" data-translate="mg">mg</span></span>
-        </div>
-        <div class="med">
-          <label class="med-check"><input type="checkbox" name="med" value="Trittico"><span data-translate="med_trittico">Trittico</span></label>
-          <span class="med-dose"><input type="number" min="0" step="0.5" inputmode="decimal" placeholder="0" disabled><span class="unit" data-translate="mg">mg</span></span>
-        </div>
-        <div class="med">
-          <label class="med-check"><input type="checkbox" name="med" value="Grandaxin"><span data-translate="med_grandaxin">Grandaxin</span></label>
-          <span class="med-dose"><input type="number" min="0" step="0.5" inputmode="decimal" placeholder="0" disabled><span class="unit" data-translate="mg">mg</span></span>
-        </div>
+        <!-- Pick a drug from the list; it gets added as a row below (scales to a long list). -->
+        <select id="medPicker" class="med-picker">
+          <option value="" data-translate="med_add" selected>+ Add a medication…</option>
+          <option value="Lamotrigine" data-translate="med_lamotrigine">Lamotrigine</option>
+          <option value="Olanzapine" data-translate="med_olanzapine">Olanzapine</option>
+          <option value="Fluoxetine" data-translate="med_fluoxetine">Fluoxetine</option>
+          <option value="Trittico" data-translate="med_trittico">Trittico</option>
+          <option value="Grandaxin" data-translate="med_grandaxin">Grandaxin</option>
+        </select>
+
+        <!-- Added medications appear here, each with an editable mg field and a remove button. -->
+        <div id="medList"></div>
       </section>
 
       <!-- ===== Diary ===== -->
