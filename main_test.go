@@ -26,6 +26,7 @@ const sampleForm = `{
   "sex": true,
   "masturbation": false,
   "headache": true,
+  "smoking": true,
   "medications": [
     {"name": "Lamotrigine", "dose": "100"},
     {"name": "Fluoxetine", "dose": "20"}
@@ -42,8 +43,8 @@ func TestFormAnswersRow(t *testing.T) {
 	a.FilledAt = "2026-07-07 09:15:00"
 	row := a.row()
 
-	if len(row) != 22 {
-		t.Fatalf("expected 22 columns, got %d", len(row))
+	if len(row) != 23 {
+		t.Fatalf("expected 23 columns, got %d", len(row))
 	}
 
 	// Spot-check the columns that go through a transform.
@@ -59,6 +60,7 @@ func TestFormAnswersRow(t *testing.T) {
 		19: "long day but fine",                  // note
 		20: "2026-07-07 09:15:00",                // filled-at timestamp
 		21: "chased by a dog",                    // dream notes (dreams were present)
+		22: "yes",                                // smoking -> yes
 	}
 	for i, want := range checks {
 		if row[i] != want {

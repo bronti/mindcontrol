@@ -34,6 +34,7 @@ const translations = {
     q_sex: "Sex",
     q_masturbation: "Masturbation",
     q_headache: "Headache",
+    q_smoking: "Smoking",
     yes: "Yes", no: "No",
 
     sec_meds: "Medications",
@@ -87,6 +88,7 @@ const translations = {
     q_sex: "Секс",
     q_masturbation: "Мастурбация",
     q_headache: "Болела голова",
+    q_smoking: "Курение",
     yes: "Да", no: "Нет",
 
     sec_meds: "Лекарства",
@@ -376,6 +378,7 @@ form.addEventListener("submit", (event) => {
     sex: form.sex.value === "yes",
     masturbation: form.masturbation.value === "yes",
     headache: form.headache.value === "yes",
+    smoking: form.smoking.value === "yes",
     medications: collectMedications(),
     note: form.note.value,
   };

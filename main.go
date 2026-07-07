@@ -45,6 +45,7 @@ type formAnswers struct {
 	Sex          bool         `json:"sex"`
 	Masturbation bool         `json:"masturbation"`
 	Headache     bool         `json:"headache"`
+	Smoking      bool         `json:"smoking"`
 	Medications  []medication `json:"medications"`
 	Note         string       `json:"note"`
 }
@@ -79,6 +80,7 @@ var columns = []struct {
 	{"Diary", func(a formAnswers) interface{} { return a.Note }},
 	{"Filled at", func(a formAnswers) interface{} { return a.FilledAt }},
 	{"Dream notes", func(a formAnswers) interface{} { return dreamNote(a) }},
+	{"Smoking", func(a formAnswers) interface{} { return yesNo(a.Smoking) }},
 }
 
 // dreamNote returns the dream text only when there actually were dreams or
