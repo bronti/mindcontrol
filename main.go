@@ -142,6 +142,9 @@ func main() {
 		log.Print("WEB_APP_URL is not set — the 'Open form' button will be hidden (see .env.example)")
 	}
 
+	// A per-startup version added to the form URL to bust the Mini App cache.
+	formVersion = fmt.Sprint(time.Now().Unix())
+
 	bot, err := tgbotapi.NewBotAPI(token)
 	if err != nil {
 		log.Fatalf("could not connect to the bot (check the token): %v", err)
@@ -198,41 +201,44 @@ func main() {
 	}
 }
 
+// formVersion is set once at startup and added to the form URL as ?v=... It
+// busts the Telegram Mini App's asset cache: restart the bot after changing the
+// form and the new version forces the page (and app.js/style.css) to reload.
+var formVersion string
+
 // formKeyboard builds a reply keyboard (shown above the text input) with a
 // single button that opens the Mini App form. Only a reply-keyboard button can
 // send answers straight back to the bot via tg.sendData → WebAppData.
-// The already-filled dates are added to the URL so the form can grey them out.
 func formKeyboard(baseURL string) tgbotapi.ReplyKeyboardMarkup {
-	link := baseURL
-	if dates, err := existingDates(); err != nil {
+	dates, err := existingDates()
+	if err != nil {
 		log.Printf("could not read existing dates for the form link: %v", err)
-	} else {
-		link = withFilledDates(baseURL, dates)
 	}
-	button := tgbotapi.NewKeyboardButtonWebApp(translate("open_form"), tgbotapi.WebAppInfo{URL: link})
+	button := tgbotapi.NewKeyboardButtonWebApp(translate("open_form"), tgbotapi.WebAppInfo{URL: buildFormURL(baseURL, dates)})
 	return tgbotapi.NewReplyKeyboard(tgbotapi.NewKeyboardButtonRow(button))
 }
 
-// withFilledDates adds the already-filled dates to the form URL as a "filled"
-// query parameter, so the form can grey them out. Capped to the most recent
-// dates to keep the URL from growing without bound.
-func withFilledDates(baseURL string, dates []string) string {
-	if len(dates) == 0 {
-		return baseURL
-	}
-	const maxDates = 120
-	sorted := append([]string(nil), dates...)
-	sort.Strings(sorted) // ISO dates sort chronologically
-	if len(sorted) > maxDates {
-		sorted = sorted[len(sorted)-maxDates:] // keep the most recent
-	}
-
+// buildFormURL adds the cache-buster version and the already-filled dates to the
+// form URL. The "filled" list lets the form grey out days that already have a
+// row; it's capped to the most recent dates to keep the URL from growing forever.
+func buildFormURL(baseURL string, dates []string) string {
 	u, err := url.Parse(baseURL)
 	if err != nil {
 		return baseURL
 	}
 	q := u.Query()
-	q.Set("filled", strings.Join(sorted, ","))
+	if formVersion != "" {
+		q.Set("v", formVersion)
+	}
+	if len(dates) > 0 {
+		const maxDates = 120
+		sorted := append([]string(nil), dates...)
+		sort.Strings(sorted) // ISO dates sort chronologically
+		if len(sorted) > maxDates {
+			sorted = sorted[len(sorted)-maxDates:] // keep the most recent
+		}
+		q.Set("filled", strings.Join(sorted, ","))
+	}
 	u.RawQuery = q.Encode()
 	return u.String()
 }

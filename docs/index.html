@@ -6,7 +6,15 @@
   <title>Makhi-Bot · daily questions</title>
   <!-- Telegram script: gives the form access to the theme, buttons and sending data to the bot -->
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
-  <link rel="stylesheet" href="style.css">
+  <!-- Load the stylesheet with the ?v= from the page URL so a new bot version busts the cache -->
+  <script>
+    (function () {
+      var v = new URLSearchParams(location.search).get("v");
+      var suffix = v ? "?v=" + encodeURIComponent(v) : "";
+      document.write('<link rel="stylesheet" href="style.css' + suffix + '">');
+    })();
+  </script>
+  <noscript><link rel="stylesheet" href="style.css"></noscript>
 </head>
 <body>
   <main class="card">
@@ -169,6 +177,13 @@
     </form>
   </main>
 
-  <script src="app.js"></script>
+  <!-- Load app.js with the same ?v= cache-buster -->
+  <script>
+    (function () {
+      var v = new URLSearchParams(location.search).get("v");
+      var suffix = v ? "?v=" + encodeURIComponent(v) : "";
+      document.write('<script src="app.js' + suffix + '"><\/script>');
+    })();
+  </script>
 </body>
 </html>
