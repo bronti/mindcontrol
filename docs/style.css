@@ -30,16 +30,39 @@ h1 {
 
 .subtitle {
   color: var(--hint);
-  margin: 0 0 24px;
+  margin: 0 0 20px;
   font-size: 14px;
 }
 
-.field {
-  display: block;
-  margin-bottom: 20px;
+/* ---- Sections ---- */
+.group {
+  border: none;
+  margin: 0 0 12px;
+  padding: 0;
 }
 
-.field > span {
+.group-title {
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--hint);
+  margin: 20px 0 12px;
+}
+
+.hint {
+  color: var(--hint);
+  font-size: 13px;
+  margin: -4px 0 12px;
+}
+
+/* ---- Generic field ---- */
+.field {
+  display: block;
+  margin-bottom: 18px;
+}
+
+.field > span,
+.field .label {
   display: block;
   margin-bottom: 8px;
   font-weight: 500;
@@ -47,14 +70,11 @@ h1 {
 
 select,
 textarea,
-input[type="range"] {
+input[type="time"],
+input[type="number"] {
   width: 100%;
   font-size: 16px;
   font-family: inherit;
-}
-
-select,
-textarea {
   padding: 12px;
   border: none;
   border-radius: 10px;
@@ -63,13 +83,129 @@ textarea {
   resize: vertical;
 }
 
-output {
-  display: inline-block;
-  margin-top: 4px;
-  color: var(--hint);
-  font-size: 14px;
+/* ---- Sleep: two time inputs + clock ---- */
+.times {
+  display: flex;
+  gap: 12px;
+}
+.times .field { flex: 1; margin-bottom: 12px; }
+
+.sleep-viz {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  background: var(--field-bg);
+  border-radius: 12px;
+  padding: 12px 16px;
+}
+.clock { width: 84px; height: 84px; flex: none; }
+.ring-bg {
+  fill: none;
+  stroke: var(--bg);
+  stroke-width: 10;
+  opacity: 0.6;
+}
+.ring-arc {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 10;
+  stroke-linecap: round;
+}
+.sleep-duration { display: flex; flex-direction: column; }
+.sleep-duration span { color: var(--hint); font-size: 13px; }
+.sleep-duration strong { font-size: 24px; margin-top: 2px; }
+
+/* ---- Sliders (1–10) ---- */
+.slider-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+.slider-head output {
+  font-weight: 700;
+  font-size: 18px;
+  color: var(--accent);
+}
+input[type="range"] {
+  width: 100%;
+  margin-top: 6px;
+  accent-color: var(--accent);
 }
 
+/* ---- Segmented control (dreams, yes/no) ---- */
+.segmented {
+  display: flex;
+  gap: 6px;
+}
+.segmented label {
+  flex: 1;
+  position: relative;
+  text-align: center;
+}
+.segmented input {
+  position: absolute;
+  opacity: 0;
+  inset: 0;
+  cursor: pointer;
+}
+.segmented span {
+  display: block;
+  padding: 10px 8px;
+  border-radius: 10px;
+  background: var(--field-bg);
+  color: var(--text);
+  font-size: 15px;
+}
+.segmented input:checked + span {
+  background: var(--accent);
+  color: var(--accent-text);
+  font-weight: 600;
+}
+
+/* Yes/No rows: label left, small toggle right */
+.yesno {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+.yesno .label { margin-bottom: 0; }
+.segmented.small { flex: none; width: 140px; }
+.segmented.small span { padding: 8px 10px; }
+
+/* ---- Medications ---- */
+.med {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+.med-check {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  font-weight: 500;
+}
+.med-check input { width: 20px; height: 20px; accent-color: var(--accent); }
+.med-dose {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: none;
+  width: 120px;
+}
+.med-dose input {
+  width: 72px;
+  padding: 8px 10px;
+  text-align: right;
+}
+.med-dose input:disabled { opacity: 0.4; }
+.med-dose .unit { color: var(--hint); font-size: 14px; }
+
+/* ---- Submit ---- */
 button {
   width: 100%;
   padding: 14px;
@@ -80,7 +216,6 @@ button {
   background: var(--accent);
   color: var(--accent-text);
   cursor: pointer;
-  margin-top: 8px;
+  margin-top: 16px;
 }
-
 button:active { opacity: 0.85; }

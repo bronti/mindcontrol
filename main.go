@@ -5,18 +5,100 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strings"
 	"time"
 
 	tgbotapi "github.com/OvyFlash/telegram-bot-api"
 	"github.com/joho/godotenv"
 )
 
+// medication is one entry from the form's medication list: a name and a dose
+// in milligrams (kept as a string — it may be empty or a decimal like "12.5").
+type medication struct {
+	Name string `json:"name"`
+	Dose string `json:"dose"`
+}
+
 // formAnswers mirrors the JSON the Mini App form sends back via tg.sendData
 // (see docs/app.js). The json tags must match the keys used there.
+// SleepHours is a pointer so a missing time (null) stays distinct from 0.
 type formAnswers struct {
-	Mood   string `json:"mood"`
-	Energy string `json:"energy"`
-	Note   string `json:"note"`
+	Bedtime      string       `json:"bedtime"`
+	Wake         string       `json:"wake"`
+	SleepHours   *float64     `json:"sleep_hours"`
+	SleepQuality int          `json:"sleep_quality"`
+	Dreams       string       `json:"dreams"`
+	State        int          `json:"state"`
+	Anxiety      int          `json:"anxiety"`
+	Irritability int          `json:"irritability"`
+	Libido       int          `json:"libido"`
+	Drowsiness   int          `json:"drowsiness"`
+	Appetite     int          `json:"appetite"`
+	Energy       int          `json:"energy"`
+	AteWell      int          `json:"ate_well"`
+	Menstruation bool         `json:"menstruation"`
+	Sex          bool         `json:"sex"`
+	Masturbation bool         `json:"masturbation"`
+	Headache     bool         `json:"headache"`
+	Medications  []medication `json:"medications"`
+	Note         string       `json:"note"`
+}
+
+// row lays the answers out as one spreadsheet row, in a fixed column order.
+// Keep this order stable — it's the layout of the Makhi-Bot tab. If you add a
+// question, add its column at the END so existing rows stay aligned.
+func (a formAnswers) row(date string) []interface{} {
+	return []interface{}{
+		date,                             // A  date
+		a.Bedtime,                        // B  fell asleep at
+		a.Wake,                           // C  woke up at
+		sleepCell(a.SleepHours),          // D  sleep duration (hours)
+		a.SleepQuality,                   // E  sleep quality 1–10
+		a.Dreams,                         // F  none / dreams / nightmares
+		a.State,                          // G  overall state 1–10
+		a.Anxiety,                        // H
+		a.Irritability,                   // I
+		a.Libido,                         // J
+		a.Drowsiness,                     // K
+		a.Appetite,                       // L
+		a.Energy,                         // M
+		a.AteWell,                        // N
+		yesNo(a.Menstruation),            // O
+		yesNo(a.Sex),                     // P
+		yesNo(a.Masturbation),            // Q
+		yesNo(a.Headache),                // R
+		formatMedications(a.Medications), // S  e.g. "Lamotrigine 100mg; Fluoxetine 20mg"
+		a.Note,                           // T  diary entry
+	}
+}
+
+// yesNo renders a boolean as a spreadsheet-friendly "yes"/"no".
+func yesNo(b bool) string {
+	if b {
+		return "yes"
+	}
+	return "no"
+}
+
+// sleepCell renders the sleep duration, or "" if no times were entered.
+func sleepCell(hours *float64) interface{} {
+	if hours == nil {
+		return ""
+	}
+	return *hours
+}
+
+// formatMedications turns the medication list into a single readable cell.
+func formatMedications(meds []medication) string {
+	parts := make([]string, 0, len(meds))
+	for _, m := range meds {
+		if m.Dose != "" {
+			parts = append(parts, fmt.Sprintf("%s %smg", m.Name, m.Dose))
+		} else {
+			parts = append(parts, m.Name)
+		}
+	}
+	return strings.Join(parts, "; ")
 }
 
 func main() {
@@ -106,9 +188,9 @@ func handleFormSubmission(bot *tgbotapi.BotAPI, message *tgbotapi.Message) {
 		return
 	}
 
-	// Save: date first, then the three answers. appendRow leaves existing data intact.
+	// Save one row for today. appendRow leaves existing data intact.
 	today := time.Now().Format("2006-01-02")
-	if err := appendRow(today, answers.Mood, answers.Energy, answers.Note); err != nil {
+	if err := appendRow(answers.row(today)...); err != nil {
 		log.Printf("could not save answers to the sheet: %v", err)
 		reply(bot, message.Chat.ID, translate("form_error"))
 		return

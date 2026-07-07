@@ -10,34 +10,159 @@
 </head>
 <body>
   <main class="card">
-    <h1 data-translate="title">Daily questions</h1>
-    <p class="subtitle" data-translate="subtitle">This is a form stub — we'll change the questions to fit you later.</p>
+    <h1 data-translate="title">Daily check-in</h1>
+    <p class="subtitle" data-translate="subtitle">How was your day?</p>
 
     <form id="form">
-      <label class="field">
-        <span data-translate="q_mood">How's your mood today?</span>
-        <select name="mood">
-          <option value="5" data-translate="mood_5">😀 great</option>
-          <option value="4" data-translate="mood_4">🙂 good</option>
-          <option value="3" data-translate="mood_3" selected>😐 okay</option>
-          <option value="2" data-translate="mood_2">😕 meh</option>
-          <option value="1" data-translate="mood_1">😞 bad</option>
-        </select>
+
+      <!-- ===== Sleep ===== -->
+      <section class="group">
+        <h2 class="group-title" data-translate="sec_sleep">Sleep</h2>
+
+        <div class="times">
+          <label class="field">
+            <span data-translate="q_bedtime">Fell asleep at</span>
+            <input type="time" name="bedtime">
+          </label>
+          <label class="field">
+            <span data-translate="q_wake">Woke up at</span>
+            <input type="time" name="wake">
+          </label>
+        </div>
+
+        <div class="sleep-viz">
+          <svg viewBox="0 0 120 120" class="clock" aria-hidden="true">
+            <circle cx="60" cy="60" r="52" class="ring-bg"></circle>
+            <path id="sleepArc" class="ring-arc" d=""></path>
+          </svg>
+          <div class="sleep-duration">
+            <span data-translate="sleep_duration_label">Sleep duration</span>
+            <strong id="sleepDuration">—</strong>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===== Sleep quality, dreams ===== -->
+      <label class="field slider">
+        <span class="slider-head"><span data-translate="q_sleep_quality">Sleep quality</span><output>5</output></span>
+        <input type="range" name="sleep_quality" min="1" max="10" value="5">
       </label>
 
+      <div class="field">
+        <span class="label" data-translate="q_dreams">Dreams?</span>
+        <div class="segmented" data-name="dreams">
+          <label><input type="radio" name="dreams" value="none" checked><span data-translate="dream_none">None</span></label>
+          <label><input type="radio" name="dreams" value="dreams"><span data-translate="dream_dreams">Dreams</span></label>
+          <label><input type="radio" name="dreams" value="nightmares"><span data-translate="dream_nightmares">Nightmares</span></label>
+        </div>
+      </div>
+
+      <!-- ===== Scales 1–10 ===== -->
+      <section class="group">
+        <h2 class="group-title" data-translate="sec_scales">How you felt (1–10)</h2>
+
+        <label class="field slider">
+          <span class="slider-head"><span data-translate="q_state">Overall state</span><output>5</output></span>
+          <input type="range" name="state" min="1" max="10" value="5">
+        </label>
+        <label class="field slider">
+          <span class="slider-head"><span data-translate="q_anxiety">Anxiety</span><output>5</output></span>
+          <input type="range" name="anxiety" min="1" max="10" value="5">
+        </label>
+        <label class="field slider">
+          <span class="slider-head"><span data-translate="q_irritability">Irritability</span><output>5</output></span>
+          <input type="range" name="irritability" min="1" max="10" value="5">
+        </label>
+        <label class="field slider">
+          <span class="slider-head"><span data-translate="q_libido">Libido</span><output>5</output></span>
+          <input type="range" name="libido" min="1" max="10" value="5">
+        </label>
+        <label class="field slider">
+          <span class="slider-head"><span data-translate="q_drowsiness">Drowsiness</span><output>5</output></span>
+          <input type="range" name="drowsiness" min="1" max="10" value="5">
+        </label>
+        <label class="field slider">
+          <span class="slider-head"><span data-translate="q_appetite">Appetite</span><output>5</output></span>
+          <input type="range" name="appetite" min="1" max="10" value="5">
+        </label>
+        <label class="field slider">
+          <span class="slider-head"><span data-translate="q_energy">Energy</span><output>5</output></span>
+          <input type="range" name="energy" min="1" max="10" value="5">
+        </label>
+        <label class="field slider">
+          <span class="slider-head"><span data-translate="q_ate_well">Ate well</span><output>5</output></span>
+          <input type="range" name="ate_well" min="1" max="10" value="5">
+        </label>
+      </section>
+
+      <!-- ===== Yes / No ===== -->
+      <section class="group">
+        <h2 class="group-title" data-translate="sec_today">Today</h2>
+
+        <div class="field yesno">
+          <span class="label" data-translate="q_menstruation">Menstruation</span>
+          <div class="segmented small" data-name="menstruation">
+            <label><input type="radio" name="menstruation" value="no" checked><span data-translate="no">No</span></label>
+            <label><input type="radio" name="menstruation" value="yes"><span data-translate="yes">Yes</span></label>
+          </div>
+        </div>
+        <div class="field yesno">
+          <span class="label" data-translate="q_sex">Sex</span>
+          <div class="segmented small" data-name="sex">
+            <label><input type="radio" name="sex" value="no" checked><span data-translate="no">No</span></label>
+            <label><input type="radio" name="sex" value="yes"><span data-translate="yes">Yes</span></label>
+          </div>
+        </div>
+        <div class="field yesno">
+          <span class="label" data-translate="q_masturbation">Masturbation</span>
+          <div class="segmented small" data-name="masturbation">
+            <label><input type="radio" name="masturbation" value="no" checked><span data-translate="no">No</span></label>
+            <label><input type="radio" name="masturbation" value="yes"><span data-translate="yes">Yes</span></label>
+          </div>
+        </div>
+        <div class="field yesno">
+          <span class="label" data-translate="q_headache">Headache</span>
+          <div class="segmented small" data-name="headache">
+            <label><input type="radio" name="headache" value="no" checked><span data-translate="no">No</span></label>
+            <label><input type="radio" name="headache" value="yes"><span data-translate="yes">Yes</span></label>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===== Medications ===== -->
+      <section class="group">
+        <h2 class="group-title" data-translate="sec_meds">Medications</h2>
+        <p class="hint" data-translate="meds_hint">Tick what you took and enter the dose in mg.</p>
+
+        <div class="med">
+          <label class="med-check"><input type="checkbox" name="med" value="Lamotrigine"><span data-translate="med_lamotrigine">Lamotrigine</span></label>
+          <span class="med-dose"><input type="number" min="0" step="0.5" inputmode="decimal" placeholder="0" disabled><span class="unit" data-translate="mg">mg</span></span>
+        </div>
+        <div class="med">
+          <label class="med-check"><input type="checkbox" name="med" value="Olanzapine"><span data-translate="med_olanzapine">Olanzapine</span></label>
+          <span class="med-dose"><input type="number" min="0" step="0.5" inputmode="decimal" placeholder="0" disabled><span class="unit" data-translate="mg">mg</span></span>
+        </div>
+        <div class="med">
+          <label class="med-check"><input type="checkbox" name="med" value="Fluoxetine"><span data-translate="med_fluoxetine">Fluoxetine</span></label>
+          <span class="med-dose"><input type="number" min="0" step="0.5" inputmode="decimal" placeholder="0" disabled><span class="unit" data-translate="mg">mg</span></span>
+        </div>
+        <div class="med">
+          <label class="med-check"><input type="checkbox" name="med" value="Trittico"><span data-translate="med_trittico">Trittico</span></label>
+          <span class="med-dose"><input type="number" min="0" step="0.5" inputmode="decimal" placeholder="0" disabled><span class="unit" data-translate="mg">mg</span></span>
+        </div>
+        <div class="med">
+          <label class="med-check"><input type="checkbox" name="med" value="Grandaxin"><span data-translate="med_grandaxin">Grandaxin</span></label>
+          <span class="med-dose"><input type="number" min="0" step="0.5" inputmode="decimal" placeholder="0" disabled><span class="unit" data-translate="mg">mg</span></span>
+        </div>
+      </section>
+
+      <!-- ===== Diary ===== -->
       <label class="field">
-        <span data-translate="q_energy">Energy level from 1 to 10?</span>
-        <input type="range" name="energy" min="1" max="10" value="5"
-               oninput="this.nextElementSibling.textContent = this.value">
-        <output>5</output>
+        <span data-translate="q_note">Diary entry</span>
+        <textarea name="note" rows="4" data-translate-placeholder="note_placeholder" placeholder="anything you want to remember about today..."></textarea>
       </label>
 
-      <label class="field">
-        <span data-translate="q_note">What was the main thing today?</span>
-        <textarea name="note" rows="3" data-translate-placeholder="note_placeholder" placeholder="a few words..."></textarea>
-      </label>
-
-      <button type="submit" data-translate="submit">Submit</button>
+      <button type="submit" data-translate="submit">Save</button>
     </form>
   </main>
 
