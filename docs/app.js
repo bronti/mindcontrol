@@ -39,6 +39,9 @@ const translations = {
     med_fluoxetine: "Fluoxetine",
     med_trittico: "Trittico",
     med_grandaxin: "Grandaxin",
+    med_ibuprofen: "Ibuprofen",
+    med_other: "Other…",
+    med_name_placeholder: "Medication name",
     mg: "mg",
 
     q_note: "Diary entry",
@@ -84,6 +87,9 @@ const translations = {
     med_fluoxetine: "Флуоксетин",
     med_trittico: "Тритико",
     med_grandaxin: "Грандаксин",
+    med_ibuprofen: "Ибупрофен",
+    med_other: "Другое…",
+    med_name_placeholder: "Название лекарства",
     mg: "мг",
 
     q_note: "Дневниковая запись",
@@ -140,27 +146,39 @@ const medPicker = document.getElementById("medPicker");
 const medList = document.getElementById("medList");
 
 medPicker.addEventListener("change", () => {
-  const name = medPicker.value;
-  if (!name) return;
+  const value = medPicker.value;
+  if (!value) return;
 
-  const option = medPicker.querySelector(`option[value="${name}"]`);
-  addMedicationRow(name, option.textContent, defaultDoses[name] || "");
-
-  // Hide the chosen drug from the list so it can't be added twice.
-  option.hidden = true;
-  option.disabled = true;
+  if (value === "__other__") {
+    // Free-text medication: a row with an editable name field.
+    addMedicationRow({ custom: true });
+  } else {
+    const option = medPicker.querySelector(`option[value="${value}"]`);
+    addMedicationRow({ name: value, label: option.textContent, dose: defaultDoses[value] || "" });
+    // Hide the chosen drug from the list so it can't be added twice.
+    option.hidden = true;
+    option.disabled = true;
+  }
   medPicker.value = ""; // back to the "+ Add…" placeholder
 });
 
-// Build one medication row: name, editable mg field, and a remove button.
-function addMedicationRow(name, label, dose) {
+// Build one medication row: name (fixed or editable for custom), mg field, remove button.
+function addMedicationRow({ name = "", label = "", dose = "", custom = false }) {
   const row = document.createElement("div");
   row.className = "med";
   row.dataset.name = name;
 
-  const nameEl = document.createElement("span");
-  nameEl.className = "med-name";
-  nameEl.textContent = label;
+  let nameEl;
+  if (custom) {
+    nameEl = document.createElement("input");
+    nameEl.type = "text";
+    nameEl.className = "med-name med-name-input";
+    nameEl.placeholder = dict.med_name_placeholder;
+  } else {
+    nameEl = document.createElement("span");
+    nameEl.className = "med-name";
+    nameEl.textContent = label;
+  }
 
   const doseWrap = document.createElement("span");
   doseWrap.className = "med-dose";
@@ -183,14 +201,17 @@ function addMedicationRow(name, label, dose) {
   remove.setAttribute("aria-label", "remove");
   remove.addEventListener("click", () => {
     row.remove();
-    // Put the drug back into the dropdown.
-    const option = medPicker.querySelector(`option[value="${name}"]`);
-    option.hidden = false;
-    option.disabled = false;
+    // Put a fixed drug back into the dropdown (custom rows have nothing to restore).
+    if (!custom) {
+      const option = medPicker.querySelector(`option[value="${name}"]`);
+      option.hidden = false;
+      option.disabled = false;
+    }
   });
 
   row.append(nameEl, doseWrap, remove);
   medList.append(row);
+  if (custom) nameEl.focus(); // let the user type the name right away
 }
 
 // ---- Sleep clock: draw the arc between bedtime and wake, show the duration ----
@@ -251,8 +272,11 @@ updateSleep();
 function collectMedications() {
   const meds = [];
   medList.querySelectorAll(".med").forEach((row) => {
+    const nameInput = row.querySelector(".med-name-input");
+    const name = nameInput ? nameInput.value.trim() : row.dataset.name;
+    if (!name) return; // skip a custom row left without a name
     const dose = row.querySelector('input[type="number"]').value;
-    meds.push({ name: row.dataset.name, dose: dose });
+    meds.push({ name: name, dose: dose });
   });
   return meds;
 }
