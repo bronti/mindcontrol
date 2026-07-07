@@ -23,6 +23,7 @@ type medication struct {
 // (see docs/app.js). The json tags must match the keys used there.
 // SleepHours is a pointer so a missing time (null) stays distinct from 0.
 type formAnswers struct {
+	Date         string       `json:"-"` // set by the bot (today's date), not sent by the form
 	Bedtime      string       `json:"bedtime"`
 	Wake         string       `json:"wake"`
 	SleepHours   *float64     `json:"sleep_hours"`
@@ -44,32 +45,53 @@ type formAnswers struct {
 	Note         string       `json:"note"`
 }
 
-// row lays the answers out as one spreadsheet row, in a fixed column order.
-// Keep this order stable — it's the layout of the Makhi-Bot tab. If you add a
-// question, add its column at the END so existing rows stay aligned.
-func (a formAnswers) row(date string) []interface{} {
-	return []interface{}{
-		date,                             // A  date
-		a.Bedtime,                        // B  fell asleep at
-		a.Wake,                           // C  woke up at
-		sleepCell(a.SleepHours),          // D  sleep duration (hours)
-		a.SleepQuality,                   // E  sleep quality 1–10
-		a.Dreams,                         // F  none / dreams / nightmares
-		a.State,                          // G  overall state 1–10
-		a.Anxiety,                        // H
-		a.Irritability,                   // I
-		a.Libido,                         // J
-		a.Drowsiness,                     // K
-		a.Appetite,                       // L
-		a.Energy,                         // M
-		a.AteWell,                        // N
-		yesNo(a.Menstruation),            // O
-		yesNo(a.Sex),                     // P
-		yesNo(a.Masturbation),            // Q
-		yesNo(a.Headache),                // R
-		formatMedications(a.Medications), // S  e.g. "Lamotrigine 100mg; Fluoxetine 20mg"
-		a.Note,                           // T  diary entry
+// columns is the single source of truth for the Makhi-Bot tab layout: the order
+// here defines BOTH the header row and every data row, so the two can never
+// drift apart. To add a question, add one entry AT THE END. Never reorder or
+// delete an entry — that would misalign every existing row against the header.
+var columns = []struct {
+	header string
+	value  func(a formAnswers) interface{}
+}{
+	{"Date", func(a formAnswers) interface{} { return a.Date }},
+	{"Fell asleep", func(a formAnswers) interface{} { return a.Bedtime }},
+	{"Woke up", func(a formAnswers) interface{} { return a.Wake }},
+	{"Sleep hours", func(a formAnswers) interface{} { return sleepCell(a.SleepHours) }},
+	{"Sleep quality", func(a formAnswers) interface{} { return a.SleepQuality }},
+	{"Dreams", func(a formAnswers) interface{} { return a.Dreams }},
+	{"Overall state", func(a formAnswers) interface{} { return a.State }},
+	{"Anxiety", func(a formAnswers) interface{} { return a.Anxiety }},
+	{"Irritability", func(a formAnswers) interface{} { return a.Irritability }},
+	{"Libido", func(a formAnswers) interface{} { return a.Libido }},
+	{"Drowsiness", func(a formAnswers) interface{} { return a.Drowsiness }},
+	{"Appetite", func(a formAnswers) interface{} { return a.Appetite }},
+	{"Energy", func(a formAnswers) interface{} { return a.Energy }},
+	{"Ate well", func(a formAnswers) interface{} { return a.AteWell }},
+	{"Menstruation", func(a formAnswers) interface{} { return yesNo(a.Menstruation) }},
+	{"Sex", func(a formAnswers) interface{} { return yesNo(a.Sex) }},
+	{"Masturbation", func(a formAnswers) interface{} { return yesNo(a.Masturbation) }},
+	{"Headache", func(a formAnswers) interface{} { return yesNo(a.Headache) }},
+	{"Medications", func(a formAnswers) interface{} { return formatMedications(a.Medications) }},
+	{"Diary", func(a formAnswers) interface{} { return a.Note }},
+}
+
+// headerRow returns the column headers, in schema order.
+func headerRow() []interface{} {
+	row := make([]interface{}, len(columns))
+	for i, c := range columns {
+		row[i] = c.header
 	}
+	return row
+}
+
+// row lays the answers out as one spreadsheet row, in schema order — the same
+// order as headerRow, so values always land under the right header.
+func (a formAnswers) row() []interface{} {
+	row := make([]interface{}, len(columns))
+	for i, c := range columns {
+		row[i] = c.value(a)
+	}
+	return row
 }
 
 // yesNo renders a boolean as a spreadsheet-friendly "yes"/"no".
@@ -121,6 +143,11 @@ func main() {
 		log.Fatalf("could not connect to the bot (check the token): %v", err)
 	}
 	log.Printf("Bot started: @%s. Send it /ping in Telegram", bot.Self.UserName)
+
+	// Make sure the sheet has a header row (written once, only when the tab is empty).
+	if err := ensureHeader(headerRow()); err != nil {
+		log.Printf("could not check/write the header row: %v", err)
+	}
 
 	// Start receiving messages (long polling)
 	u := tgbotapi.NewUpdate(0)
@@ -189,8 +216,8 @@ func handleFormSubmission(bot *tgbotapi.BotAPI, message *tgbotapi.Message) {
 	}
 
 	// Save one row for today. appendRow leaves existing data intact.
-	today := time.Now().Format("2006-01-02")
-	if err := appendRow(answers.row(today)...); err != nil {
+	answers.Date = time.Now().Format("2006-01-02")
+	if err := appendRow(answers.row()...); err != nil {
 		log.Printf("could not save answers to the sheet: %v", err)
 		reply(bot, message.Chat.ID, translate("form_error"))
 		return

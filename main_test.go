@@ -37,7 +37,8 @@ func TestFormAnswersRow(t *testing.T) {
 		t.Fatalf("unmarshal failed: %v", err)
 	}
 
-	row := a.row("2026-07-07")
+	a.Date = "2026-07-07"
+	row := a.row()
 
 	if len(row) != 20 {
 		t.Fatalf("expected 20 columns, got %d", len(row))
@@ -45,20 +46,28 @@ func TestFormAnswersRow(t *testing.T) {
 
 	// Spot-check the columns that go through a transform.
 	checks := map[int]interface{}{
-		0:  "2026-07-07",                    // date
-		3:  7.5,                             // sleep hours
-		4:  8,                               // sleep quality
-		5:  "nightmares",                    // dreams
-		15: "yes",                           // sex -> yes
-		14: "no",                            // menstruation -> no
-		17: "yes",                           // headache -> yes
+		0:  "2026-07-07",                         // date
+		3:  7.5,                                  // sleep hours
+		4:  8,                                    // sleep quality
+		5:  "nightmares",                         // dreams
+		15: "yes",                                // sex -> yes
+		14: "no",                                 // menstruation -> no
+		17: "yes",                                // headache -> yes
 		18: "Lamotrigine 100mg; Fluoxetine 20mg", // medications
-		19: "long day but fine",            // note
+		19: "long day but fine",                  // note
 	}
 	for i, want := range checks {
 		if row[i] != want {
 			t.Errorf("column %d: got %v (%T), want %v (%T)", i, row[i], row[i], want, want)
 		}
+	}
+}
+
+// The header and a data row must always have the same number of columns, so
+// values never land under the wrong header.
+func TestHeaderAndRowAligned(t *testing.T) {
+	if got, want := len(formAnswers{}.row()), len(headerRow()); got != want {
+		t.Fatalf("row has %d columns but header has %d", got, want)
 	}
 }
 
