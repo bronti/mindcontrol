@@ -15,14 +15,22 @@ func currentLanguage() string {
 // To add a language, add a new map with the same keys.
 var messages = map[string]map[string]string{
 	"en": {
-		"start":   "Hi! I'm Makhi-Bot 🤖\nSend /ping to check that I'm online.",
-		"ping":    "pong 🏓 I'm alive!",
-		"unknown": "Got your message: %s\n(for now I only understand /ping — more coming soon)",
+		"start":       "Hi! I'm Makhi-Bot 🤖\nTap the button below to open the daily form, or send /ping to check that I'm online.",
+		"ping":        "pong 🏓 I'm alive!",
+		"unknown":     "Got your message: %s\n(try /form to open the daily questions, or /ping)",
+		"form_prompt": "Tap the button below to open the daily form 👇",
+		"open_form":   "📝 Open form",
+		"form_saved":  "Saved, thank you! ✅ See you tomorrow.",
+		"form_error":  "Hmm, I couldn't save that 😞 Please try again in a moment.",
 	},
 	"ru": {
-		"start":   "Привет! Я Makhi-Bot 🤖\nНапиши /ping, чтобы проверить, что я на связи.",
-		"ping":    "понг 🏓 я живой!",
-		"unknown": "Получил твоё сообщение: %s\n(пока умею только /ping — остальное скоро)",
+		"start":       "Привет! Я Makhi-Bot 🤖\nНажми кнопку ниже, чтобы открыть форму дня, или напиши /ping для проверки связи.",
+		"ping":        "понг 🏓 я живой!",
+		"unknown":     "Получил твоё сообщение: %s\n(нажми /form, чтобы открыть вопросы дня, или /ping)",
+		"form_prompt": "Нажми кнопку ниже, чтобы открыть форму дня 👇",
+		"open_form":   "📝 Открыть форму",
+		"form_saved":  "Сохранил, спасибо! ✅ До завтра.",
+		"form_error":  "Хм, не получилось сохранить 😞 Попробуй ещё раз чуть позже.",
 	},
 }
 
