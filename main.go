@@ -168,6 +168,10 @@ func main() {
 		log.Printf("could not check/write the header row: %v", err)
 	}
 
+	// Load local settings (chat id + reminder times) and start the reminder loop.
+	loadSettings()
+	go runReminders(bot, webAppURL)
+
 	// Start receiving messages (long polling)
 	u := tgbotapi.NewUpdate(0)
 	u.Timeout = 60
@@ -178,6 +182,9 @@ func main() {
 			continue // we only care about messages
 		}
 
+		// Remember which chat to send reminders to (learned from any message).
+		rememberChat(update.Message.Chat.ID)
+
 		// The form was submitted: Telegram delivers its JSON as web_app_data.
 		if update.Message.WebAppData != nil {
 			handleFormSubmission(bot, update.Message, webAppURL)
@@ -187,14 +194,27 @@ func main() {
 		text := update.Message.Text
 		log.Printf("[@%s] %s", update.Message.From.UserName, text)
 
+		// The command is the first word, so "/evening 21:00" still matches "/evening".
+		fields := strings.Fields(text)
+		command := ""
+		if len(fields) > 0 {
+			command = fields[0]
+		}
+
 		var reply string
-		switch text {
+		switch command {
 		case "/start":
 			reply = translate("start")
 		case "/ping":
 			reply = translate("ping")
 		case "/form":
 			reply = translate("form_prompt")
+		case "/settings":
+			reply = settingsMessage()
+		case "/evening":
+			reply = setReminderTime("evening", fields)
+		case "/afternoon":
+			reply = setReminderTime("afternoon", fields)
 		default:
 			reply = fmt.Sprintf(translate("unknown"), text)
 		}
@@ -203,7 +223,7 @@ func main() {
 		msg.ReplyParameters = tgbotapi.ReplyParameters{MessageID: update.Message.MessageID}
 
 		// On /start and /form, attach the reply keyboard with the "Open form" button.
-		if (text == "/start" || text == "/form") && webAppURL != "" {
+		if (command == "/start" || command == "/form") && webAppURL != "" {
 			msg.ReplyMarkup = formKeyboard(webAppURL)
 		}
 
@@ -222,18 +242,26 @@ var formVersion string
 // single button that opens the Mini App form. Only a reply-keyboard button can
 // send answers straight back to the bot via tg.sendData → WebAppData.
 func formKeyboard(baseURL string) tgbotapi.ReplyKeyboardMarkup {
+	return formKeyboardForDate(baseURL, "")
+}
+
+// formKeyboardForDate is like formKeyboard but pre-selects a date in the form
+// (used by the yesterday catch-up reminder). Pass "" for the default (today).
+func formKeyboardForDate(baseURL, targetDate string) tgbotapi.ReplyKeyboardMarkup {
 	dates, err := existingDates()
 	if err != nil {
 		log.Printf("could not read existing dates for the form link: %v", err)
 	}
-	button := tgbotapi.NewKeyboardButtonWebApp(translate("open_form"), tgbotapi.WebAppInfo{URL: buildFormURL(baseURL, dates)})
+	link := buildFormURL(baseURL, dates, targetDate)
+	button := tgbotapi.NewKeyboardButtonWebApp(translate("open_form"), tgbotapi.WebAppInfo{URL: link})
 	return tgbotapi.NewReplyKeyboard(tgbotapi.NewKeyboardButtonRow(button))
 }
 
-// buildFormURL adds the cache-buster version and the already-filled dates to the
-// form URL. The "filled" list lets the form grey out days that already have a
-// row; it's capped to the most recent dates to keep the URL from growing forever.
-func buildFormURL(baseURL string, dates []string) string {
+// buildFormURL adds the cache-buster version, an optional pre-selected date, and
+// the already-filled dates to the form URL. The "filled" list lets the form grey
+// out days that already have a row; it's capped to the most recent dates to keep
+// the URL from growing forever.
+func buildFormURL(baseURL string, dates []string, targetDate string) string {
 	u, err := url.Parse(baseURL)
 	if err != nil {
 		return baseURL
@@ -241,6 +269,9 @@ func buildFormURL(baseURL string, dates []string) string {
 	q := u.Query()
 	if formVersion != "" {
 		q.Set("v", formVersion)
+	}
+	if targetDate != "" {
+		q.Set("date", targetDate)
 	}
 	if len(dates) > 0 {
 		const maxDates = 120
@@ -253,6 +284,19 @@ func buildFormURL(baseURL string, dates []string) string {
 	}
 	u.RawQuery = q.Encode()
 	return u.String()
+}
+
+// rememberChat saves the chat id the first time we see it (or if it changes),
+// so the reminder loop knows where to send messages.
+func rememberChat(chatID int64) {
+	if getSettings().ChatID == chatID {
+		return
+	}
+	if err := saveSettings(func(s *settings) { s.ChatID = chatID }); err != nil {
+		log.Printf("could not save chat id: %v", err)
+		return
+	}
+	log.Printf("reminders will be sent to chat %d", chatID)
 }
 
 // handleFormSubmission parses the form's JSON, checks the chosen date is valid

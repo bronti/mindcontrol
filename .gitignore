@@ -10,6 +10,9 @@ google-cloud-key.json
 # === Local notes (not for the public repo) ===
 PROGRESS.md
 
+# === Local runtime state (chat id + reminder times) ===
+settings.json
+
 # === Misc ===
 .DS_Store
 Thumbs.db

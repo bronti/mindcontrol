@@ -149,7 +149,13 @@ function isoDate(d) {
   return `${year}-${month}-${day}`;
 }
 const today = isoDate(new Date());
-dateInput.value = today;
+// A reminder may open the form pre-set to a specific day via ?date=YYYY-MM-DD.
+const requestedDate = new URLSearchParams(location.search).get("date");
+const startDate =
+  requestedDate && /^\d{4}-\d{2}-\d{2}$/.test(requestedDate) && requestedDate <= today
+    ? requestedDate
+    : today;
+dateInput.value = startDate;
 dateInput.max = today; // no filling in the future
 
 // Dates already saved — the bot passes them in the form URL as ?filled=a,b,c
