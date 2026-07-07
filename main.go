@@ -32,6 +32,7 @@ type formAnswers struct {
 	SleepHours   *float64     `json:"sleep_hours"`
 	SleepQuality int          `json:"sleep_quality"`
 	Dreams       string       `json:"dreams"`
+	DreamNote    string       `json:"dream_note"`
 	State        int          `json:"state"`
 	Anxiety      int          `json:"anxiety"`
 	Irritability int          `json:"irritability"`
@@ -77,6 +78,17 @@ var columns = []struct {
 	{"Medications", func(a formAnswers) interface{} { return formatMedications(a.Medications) }},
 	{"Diary", func(a formAnswers) interface{} { return a.Note }},
 	{"Filled at", func(a formAnswers) interface{} { return a.FilledAt }},
+	{"Dream notes", func(a formAnswers) interface{} { return dreamNote(a) }},
+}
+
+// dreamNote returns the dream text only when there actually were dreams or
+// nightmares — so text typed and then dismissed (dreams set back to "none")
+// is never saved.
+func dreamNote(a formAnswers) string {
+	if a.Dreams == "dreams" || a.Dreams == "nightmares" {
+		return a.DreamNote
+	}
+	return ""
 }
 
 // headerRow returns the column headers, in schema order.

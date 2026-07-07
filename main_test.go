@@ -13,6 +13,7 @@ const sampleForm = `{
   "sleep_hours": 7.5,
   "sleep_quality": 8,
   "dreams": "nightmares",
+  "dream_note": "chased by a dog",
   "state": 7,
   "anxiety": 3,
   "irritability": 2,
@@ -41,8 +42,8 @@ func TestFormAnswersRow(t *testing.T) {
 	a.FilledAt = "2026-07-07 09:15:00"
 	row := a.row()
 
-	if len(row) != 21 {
-		t.Fatalf("expected 21 columns, got %d", len(row))
+	if len(row) != 22 {
+		t.Fatalf("expected 22 columns, got %d", len(row))
 	}
 
 	// Spot-check the columns that go through a transform.
@@ -57,6 +58,7 @@ func TestFormAnswersRow(t *testing.T) {
 		18: "Lamotrigine 100mg; Fluoxetine 20mg", // medications
 		19: "long day but fine",                  // note
 		20: "2026-07-07 09:15:00",                // filled-at timestamp
+		21: "chased by a dog",                    // dream notes (dreams were present)
 	}
 	for i, want := range checks {
 		if row[i] != want {
@@ -70,6 +72,19 @@ func TestFormAnswersRow(t *testing.T) {
 func TestHeaderAndRowAligned(t *testing.T) {
 	if got, want := len(formAnswers{}.row()), len(headerRow()); got != want {
 		t.Fatalf("row has %d columns but header has %d", got, want)
+	}
+}
+
+// Dream text typed and then dismissed (dreams switched back to "none") must not
+// be saved.
+func TestDreamNoteDroppedWhenNone(t *testing.T) {
+	a := formAnswers{Dreams: "none", DreamNote: "typed then changed my mind"}
+	if got := dreamNote(a); got != "" {
+		t.Errorf("expected dream note dropped for none, got %q", got)
+	}
+	a.Dreams = "dreams"
+	if got := dreamNote(a); got != "typed then changed my mind" {
+		t.Errorf("expected dream note kept for dreams, got %q", got)
 	}
 }
 

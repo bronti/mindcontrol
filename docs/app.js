@@ -16,6 +16,8 @@ const translations = {
     q_sleep_quality: "Sleep quality",
     q_dreams: "Dreams?",
     dream_none: "None", dream_dreams: "Dreams", dream_nightmares: "Nightmares",
+    q_dream_note: "What was the dream about?",
+    dream_note_placeholder: "what happened in the dream...",
 
     sec_scales: "How you felt (1–5)",
     q_state: "Overall state",
@@ -67,6 +69,8 @@ const translations = {
     q_sleep_quality: "Качество сна",
     q_dreams: "Сны?",
     dream_none: "Нет", dream_dreams: "Сны", dream_nightmares: "Кошмары",
+    q_dream_note: "О чём был сон?",
+    dream_note_placeholder: "что происходило во сне...",
 
     sec_scales: "Как ты себя чувствовал(а) (1–5)",
     q_state: "Общее состояние",
@@ -172,6 +176,19 @@ form.querySelectorAll('input[type="range"]').forEach((range) => {
   range.addEventListener("input", sync);
   sync();
 });
+
+// ---- Dream note: show the text field only for "dreams"/"nightmares" ----
+// The textarea keeps its text when hidden, so switching none/dreams/nightmares
+// never loses what was typed. Whether it's actually saved is decided at submit.
+const dreamNoteField = document.getElementById("dreamNoteField");
+function updateDreamNote() {
+  const v = form.dreams.value;
+  dreamNoteField.hidden = !(v === "dreams" || v === "nightmares");
+}
+form.querySelectorAll('input[name="dreams"]').forEach((radio) => {
+  radio.addEventListener("change", updateDreamNote);
+});
+updateDreamNote();
 
 // ---- Medications: add from a dropdown, each with a pre-filled, editable dose ----
 // Default dose in mg per drug (leave a drug out for a blank default).
@@ -335,6 +352,12 @@ form.addEventListener("submit", (event) => {
     sleep_hours: minutes === null ? null : Math.round((minutes / 60) * 100) / 100,
     sleep_quality: Number(form.sleep_quality.value),
     dreams: form.dreams.value,
+    // Only send the dream text when there actually were dreams/nightmares — if the
+    // user typed something then switched back to "none", it must not be saved.
+    dream_note:
+      form.dreams.value === "dreams" || form.dreams.value === "nightmares"
+        ? form.dream_note.value
+        : "",
     state: Number(form.state.value),
     anxiety: Number(form.anxiety.value),
     irritability: Number(form.irritability.value),
