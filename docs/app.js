@@ -19,7 +19,7 @@ const translations = {
     q_dream_note: "What was the dream about?",
     dream_note_placeholder: "what happened in the dream...",
 
-    sec_scales: "How you felt (1–5)",
+    sec_scales: "How you felt (0–4)",
     q_state: "Overall state",
     q_anxiety: "Anxiety",
     q_irritability: "Irritability",
@@ -72,7 +72,7 @@ const translations = {
     q_dream_note: "О чём был сон?",
     dream_note_placeholder: "что происходило во сне...",
 
-    sec_scales: "Как ты себя чувствовал(а) (1–5)",
+    sec_scales: "Как ты себя чувствовал(а) (0–4)",
     q_state: "Общее состояние",
     q_anxiety: "Тревожность",
     q_irritability: "Раздражительность",
