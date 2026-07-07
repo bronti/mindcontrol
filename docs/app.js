@@ -17,7 +17,7 @@ const translations = {
     q_dreams: "Dreams?",
     dream_none: "None", dream_dreams: "Dreams", dream_nightmares: "Nightmares",
 
-    sec_scales: "How you felt (1–10)",
+    sec_scales: "How you felt (1–5)",
     q_state: "Overall state",
     q_anxiety: "Anxiety",
     q_irritability: "Irritability",
@@ -68,7 +68,7 @@ const translations = {
     q_dreams: "Сны?",
     dream_none: "Нет", dream_dreams: "Сны", dream_nightmares: "Кошмары",
 
-    sec_scales: "Как ты себя чувствовал(а) (1–10)",
+    sec_scales: "Как ты себя чувствовал(а) (1–5)",
     q_state: "Общее состояние",
     q_anxiety: "Тревожность",
     q_irritability: "Раздражительность",

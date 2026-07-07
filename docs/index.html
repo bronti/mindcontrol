@@ -22,6 +22,12 @@
       </label>
       <p class="date-taken-msg" id="dateWarning" data-translate="date_taken" hidden>This date is already filled — pick another.</p>
 
+      <!-- ===== Overall state (kept at the top, next to the date) ===== -->
+      <label class="field slider">
+        <span class="slider-head"><span data-translate="q_state">Overall state</span><output>5</output></span>
+        <input type="range" name="state" min="1" max="10" value="5">
+      </label>
+
       <!-- ===== Sleep ===== -->
       <section class="group">
         <h2 class="group-title" data-translate="sec_sleep">Sleep</h2>
@@ -51,8 +57,8 @@
 
       <!-- ===== Sleep quality, dreams ===== -->
       <label class="field slider">
-        <span class="slider-head"><span data-translate="q_sleep_quality">Sleep quality</span><output>5</output></span>
-        <input type="range" name="sleep_quality" min="1" max="10" value="5">
+        <span class="slider-head"><span data-translate="q_sleep_quality">Sleep quality</span><output>3</output></span>
+        <input type="range" name="sleep_quality" min="1" max="5" value="3">
       </label>
 
       <div class="field">
@@ -64,41 +70,37 @@
         </div>
       </div>
 
-      <!-- ===== Scales 1–10 ===== -->
+      <!-- ===== Scales 1–5 ===== -->
       <section class="group">
-        <h2 class="group-title" data-translate="sec_scales">How you felt (1–10)</h2>
+        <h2 class="group-title" data-translate="sec_scales">How you felt (1–5)</h2>
 
         <label class="field slider">
-          <span class="slider-head"><span data-translate="q_state">Overall state</span><output>5</output></span>
-          <input type="range" name="state" min="1" max="10" value="5">
+          <span class="slider-head"><span data-translate="q_anxiety">Anxiety</span><output>3</output></span>
+          <input type="range" name="anxiety" min="1" max="5" value="3">
         </label>
         <label class="field slider">
-          <span class="slider-head"><span data-translate="q_anxiety">Anxiety</span><output>5</output></span>
-          <input type="range" name="anxiety" min="1" max="10" value="5">
+          <span class="slider-head"><span data-translate="q_irritability">Irritability</span><output>3</output></span>
+          <input type="range" name="irritability" min="1" max="5" value="3">
         </label>
         <label class="field slider">
-          <span class="slider-head"><span data-translate="q_irritability">Irritability</span><output>5</output></span>
-          <input type="range" name="irritability" min="1" max="10" value="5">
+          <span class="slider-head"><span data-translate="q_libido">Libido</span><output>3</output></span>
+          <input type="range" name="libido" min="1" max="5" value="3">
         </label>
         <label class="field slider">
-          <span class="slider-head"><span data-translate="q_libido">Libido</span><output>5</output></span>
-          <input type="range" name="libido" min="1" max="10" value="5">
+          <span class="slider-head"><span data-translate="q_drowsiness">Drowsiness</span><output>3</output></span>
+          <input type="range" name="drowsiness" min="1" max="5" value="3">
         </label>
         <label class="field slider">
-          <span class="slider-head"><span data-translate="q_drowsiness">Drowsiness</span><output>5</output></span>
-          <input type="range" name="drowsiness" min="1" max="10" value="5">
+          <span class="slider-head"><span data-translate="q_appetite">Appetite</span><output>3</output></span>
+          <input type="range" name="appetite" min="1" max="5" value="3">
         </label>
         <label class="field slider">
-          <span class="slider-head"><span data-translate="q_appetite">Appetite</span><output>5</output></span>
-          <input type="range" name="appetite" min="1" max="10" value="5">
+          <span class="slider-head"><span data-translate="q_energy">Energy</span><output>3</output></span>
+          <input type="range" name="energy" min="1" max="5" value="3">
         </label>
         <label class="field slider">
-          <span class="slider-head"><span data-translate="q_energy">Energy</span><output>5</output></span>
-          <input type="range" name="energy" min="1" max="10" value="5">
-        </label>
-        <label class="field slider">
-          <span class="slider-head"><span data-translate="q_ate_well">Ate well</span><output>5</output></span>
-          <input type="range" name="ate_well" min="1" max="10" value="5">
+          <span class="slider-head"><span data-translate="q_ate_well">Ate well</span><output>3</output></span>
+          <input type="range" name="ate_well" min="1" max="5" value="3">
         </label>
       </section>
 
