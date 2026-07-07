@@ -4,6 +4,7 @@ google-cloud-key.json
 
 # === Compiled binaries ===
 *.exe
+*.exe~
 /mindcontrol
 /bin/
 
