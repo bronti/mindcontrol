@@ -71,6 +71,7 @@ h1 {
 select,
 textarea,
 input[type="time"],
+input[type="date"],
 input[type="number"] {
   width: 100%;
   font-size: 16px;
@@ -81,6 +82,21 @@ input[type="number"] {
   background: var(--field-bg);
   color: var(--text);
   resize: vertical;
+}
+
+/* ---- Entry date + already-filled warning ---- */
+.date-field input.taken {
+  outline: 2px solid #e5484d;
+  background: rgba(229, 72, 77, 0.12);
+}
+.date-taken-msg {
+  color: #e5484d;
+  font-size: 13px;
+  margin: -10px 0 16px;
+}
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 /* ---- Sleep: two time inputs + clock ---- */

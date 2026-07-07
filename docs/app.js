@@ -5,6 +5,9 @@ const translations = {
     title: "Daily check-in",
     subtitle: "How was your day?",
 
+    q_date: "Date",
+    date_taken: "This date is already filled — pick another.",
+
     sec_sleep: "Sleep",
     q_bedtime: "Fell asleep at",
     q_wake: "Woke up at",
@@ -52,6 +55,9 @@ const translations = {
   ru: {
     title: "Ежедневный чек-ин",
     subtitle: "Как прошёл день?",
+
+    q_date: "Дата",
+    date_taken: "Эта дата уже заполнена — выбери другую.",
 
     sec_sleep: "Сон",
     q_bedtime: "Уснул(а) в",
@@ -125,6 +131,39 @@ function applyTranslations() {
 applyTranslations();
 
 const form = document.getElementById("form");
+const submitButton = form.querySelector('button[type="submit"]');
+
+// ---- Entry date: default today, and block days that are already filled ----
+const dateInput = form.date;
+const dateWarning = document.getElementById("dateWarning");
+
+// Local date as YYYY-MM-DD (not UTC — avoids the day being off near midnight).
+function isoDate(d) {
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+const today = isoDate(new Date());
+dateInput.value = today;
+dateInput.max = today; // no filling in the future
+
+// Dates already saved — the bot passes them in the form URL as ?filled=a,b,c
+const filledDates = new Set(
+  (new URLSearchParams(location.search).get("filled") || "")
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean)
+);
+
+function checkDate() {
+  const taken = filledDates.has(dateInput.value);
+  dateInput.classList.toggle("taken", taken);
+  dateWarning.hidden = !taken;
+  submitButton.disabled = taken;
+}
+dateInput.addEventListener("input", checkDate);
+checkDate();
 
 // ---- Sliders: show the current value next to each label ----
 form.querySelectorAll('input[type="range"]').forEach((range) => {
@@ -285,8 +324,12 @@ function collectMedications() {
 form.addEventListener("submit", (event) => {
   event.preventDefault();
 
+  // Safety net: never send an already-filled date (the button is disabled too).
+  if (filledDates.has(dateInput.value)) return;
+
   const minutes = sleepMinutes();
   const answers = {
+    date: dateInput.value,
     bedtime: bedtime.value,
     wake: wake.value,
     sleep_hours: minutes === null ? null : Math.round((minutes / 60) * 100) / 100,

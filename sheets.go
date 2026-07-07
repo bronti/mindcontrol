@@ -32,14 +32,42 @@ func appendRow(values ...interface{}) error {
 
 	row := &sheets.ValueRange{Values: [][]interface{}{values}}
 
+	// RAW (not USER_ENTERED): store values exactly as given, so date strings stay
+	// text that round-trips unchanged and don't get reformatted by the sheet locale.
 	_, err = srv.Spreadsheets.Values.
 		Append(spreadsheetID, sheetRange, row).
-		ValueInputOption("USER_ENTERED").
+		ValueInputOption("RAW").
 		Do()
 	if err != nil {
 		return fmt.Errorf("writing to the sheet: %w", err)
 	}
 	return nil
+}
+
+// existingDates returns the dates already saved in column A of the Makhi-Bot tab
+// (row 1, the header, is skipped). Used to stop the same day being filled twice.
+func existingDates() ([]string, error) {
+	ctx := context.Background()
+
+	srv, err := sheets.NewService(ctx, option.WithCredentialsFile("google-cloud-key.json"))
+	if err != nil {
+		return nil, fmt.Errorf("connecting to Google Sheets: %w", err)
+	}
+
+	resp, err := srv.Spreadsheets.Values.Get(spreadsheetID, "'Makhi-Bot'!A2:A").Do()
+	if err != nil {
+		return nil, fmt.Errorf("reading existing dates: %w", err)
+	}
+
+	dates := make([]string, 0, len(resp.Values))
+	for _, row := range resp.Values {
+		if len(row) > 0 {
+			if s := fmt.Sprint(row[0]); s != "" {
+				dates = append(dates, s)
+			}
+		}
+	}
+	return dates, nil
 }
 
 // ensureHeader writes the header row to the top of the Makhi-Bot tab, but only

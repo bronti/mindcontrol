@@ -4,7 +4,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"net/url"
 	"os"
+	"sort"
 	"strings"
 	"time"
 
@@ -23,7 +25,8 @@ type medication struct {
 // (see docs/app.js). The json tags must match the keys used there.
 // SleepHours is a pointer so a missing time (null) stays distinct from 0.
 type formAnswers struct {
-	Date         string       `json:"-"` // set by the bot (today's date), not sent by the form
+	Date         string       `json:"date"` // the day being filled in (chosen in the form)
+	FilledAt     string       `json:"-"`    // when the form was submitted; set by the bot
 	Bedtime      string       `json:"bedtime"`
 	Wake         string       `json:"wake"`
 	SleepHours   *float64     `json:"sleep_hours"`
@@ -73,6 +76,7 @@ var columns = []struct {
 	{"Headache", func(a formAnswers) interface{} { return yesNo(a.Headache) }},
 	{"Medications", func(a formAnswers) interface{} { return formatMedications(a.Medications) }},
 	{"Diary", func(a formAnswers) interface{} { return a.Note }},
+	{"Filled at", func(a formAnswers) interface{} { return a.FilledAt }},
 }
 
 // headerRow returns the column headers, in schema order.
@@ -161,7 +165,7 @@ func main() {
 
 		// The form was submitted: Telegram delivers its JSON as web_app_data.
 		if update.Message.WebAppData != nil {
-			handleFormSubmission(bot, update.Message)
+			handleFormSubmission(bot, update.Message, webAppURL)
 			continue
 		}
 
@@ -197,14 +201,45 @@ func main() {
 // formKeyboard builds a reply keyboard (shown above the text input) with a
 // single button that opens the Mini App form. Only a reply-keyboard button can
 // send answers straight back to the bot via tg.sendData → WebAppData.
-func formKeyboard(url string) tgbotapi.ReplyKeyboardMarkup {
-	button := tgbotapi.NewKeyboardButtonWebApp(translate("open_form"), tgbotapi.WebAppInfo{URL: url})
+// The already-filled dates are added to the URL so the form can grey them out.
+func formKeyboard(baseURL string) tgbotapi.ReplyKeyboardMarkup {
+	link := baseURL
+	if dates, err := existingDates(); err != nil {
+		log.Printf("could not read existing dates for the form link: %v", err)
+	} else {
+		link = withFilledDates(baseURL, dates)
+	}
+	button := tgbotapi.NewKeyboardButtonWebApp(translate("open_form"), tgbotapi.WebAppInfo{URL: link})
 	return tgbotapi.NewReplyKeyboard(tgbotapi.NewKeyboardButtonRow(button))
 }
 
-// handleFormSubmission parses the form's JSON, appends it to the sheet, and
-// replies with a confirmation (or an error message if something went wrong).
-func handleFormSubmission(bot *tgbotapi.BotAPI, message *tgbotapi.Message) {
+// withFilledDates adds the already-filled dates to the form URL as a "filled"
+// query parameter, so the form can grey them out. Capped to the most recent
+// dates to keep the URL from growing without bound.
+func withFilledDates(baseURL string, dates []string) string {
+	if len(dates) == 0 {
+		return baseURL
+	}
+	const maxDates = 120
+	sorted := append([]string(nil), dates...)
+	sort.Strings(sorted) // ISO dates sort chronologically
+	if len(sorted) > maxDates {
+		sorted = sorted[len(sorted)-maxDates:] // keep the most recent
+	}
+
+	u, err := url.Parse(baseURL)
+	if err != nil {
+		return baseURL
+	}
+	q := u.Query()
+	q.Set("filled", strings.Join(sorted, ","))
+	u.RawQuery = q.Encode()
+	return u.String()
+}
+
+// handleFormSubmission parses the form's JSON, checks the chosen date is valid
+// and not already filled, appends the row, and confirms (or reports an error).
+func handleFormSubmission(bot *tgbotapi.BotAPI, message *tgbotapi.Message, webAppURL string) {
 	raw := message.WebAppData.Data
 	log.Printf("[@%s] form submitted: %s", message.From.UserName, raw)
 
@@ -215,15 +250,44 @@ func handleFormSubmission(bot *tgbotapi.BotAPI, message *tgbotapi.Message) {
 		return
 	}
 
-	// Save one row for today. appendRow leaves existing data intact.
-	answers.Date = time.Now().Format("2006-01-02")
+	// The date is chosen in the form — make sure it's a real YYYY-MM-DD.
+	if _, err := time.Parse("2006-01-02", answers.Date); err != nil {
+		log.Printf("bad date from form: %q (%v)", answers.Date, err)
+		reply(bot, message.Chat.ID, translate("form_error"))
+		return
+	}
+
+	// Refuse to fill a day that already has a row. This is the authoritative
+	// check — the form's red highlight can be out of date.
+	dates, err := existingDates()
+	if err != nil {
+		log.Printf("could not check existing dates: %v", err)
+		reply(bot, message.Chat.ID, translate("form_error"))
+		return
+	}
+	for _, d := range dates {
+		if d == answers.Date {
+			reply(bot, message.Chat.ID, fmt.Sprintf(translate("date_taken"), answers.Date))
+			return
+		}
+	}
+
+	// Stamp when the form was actually submitted, then save.
+	answers.FilledAt = time.Now().Format("2006-01-02 15:04:05")
 	if err := appendRow(answers.row()...); err != nil {
 		log.Printf("could not save answers to the sheet: %v", err)
 		reply(bot, message.Chat.ID, translate("form_error"))
 		return
 	}
 
-	reply(bot, message.Chat.ID, translate("form_saved"))
+	// Confirm, and offer a fresh button so the next backfill knows this date is taken.
+	msg := tgbotapi.NewMessage(message.Chat.ID, translate("form_saved"))
+	if webAppURL != "" {
+		msg.ReplyMarkup = formKeyboard(webAppURL)
+	}
+	if _, err := bot.Send(msg); err != nil {
+		log.Printf("failed to send confirmation: %v", err)
+	}
 }
 
 // reply sends a plain text message to a chat (small helper to cut repetition).

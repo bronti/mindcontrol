@@ -7,6 +7,7 @@ import (
 
 // A payload shaped exactly like what docs/app.js sends via tg.sendData.
 const sampleForm = `{
+  "date": "2026-07-07",
   "bedtime": "23:30",
   "wake": "07:00",
   "sleep_hours": 7.5,
@@ -37,16 +38,16 @@ func TestFormAnswersRow(t *testing.T) {
 		t.Fatalf("unmarshal failed: %v", err)
 	}
 
-	a.Date = "2026-07-07"
+	a.FilledAt = "2026-07-07 09:15:00"
 	row := a.row()
 
-	if len(row) != 20 {
-		t.Fatalf("expected 20 columns, got %d", len(row))
+	if len(row) != 21 {
+		t.Fatalf("expected 21 columns, got %d", len(row))
 	}
 
 	// Spot-check the columns that go through a transform.
 	checks := map[int]interface{}{
-		0:  "2026-07-07",                         // date
+		0:  "2026-07-07",                         // date (from the form)
 		3:  7.5,                                  // sleep hours
 		4:  8,                                    // sleep quality
 		5:  "nightmares",                         // dreams
@@ -55,6 +56,7 @@ func TestFormAnswersRow(t *testing.T) {
 		17: "yes",                                // headache -> yes
 		18: "Lamotrigine 100mg; Fluoxetine 20mg", // medications
 		19: "long day but fine",                  // note
+		20: "2026-07-07 09:15:00",                // filled-at timestamp
 	}
 	for i, want := range checks {
 		if row[i] != want {

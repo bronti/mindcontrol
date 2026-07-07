@@ -22,6 +22,7 @@ var messages = map[string]map[string]string{
 		"open_form":   "📝 Open form",
 		"form_saved":  "Saved, thank you! ✅ See you tomorrow.",
 		"form_error":  "Hmm, I couldn't save that 😞 Please try again in a moment.",
+		"date_taken":  "The day %s is already filled in — pick another date.",
 	},
 	"ru": {
 		"start":       "Привет! Я Makhi-Bot 🤖\nНажми кнопку ниже, чтобы открыть форму дня, или напиши /ping для проверки связи.",
@@ -31,6 +32,7 @@ var messages = map[string]map[string]string{
 		"open_form":   "📝 Открыть форму",
 		"form_saved":  "Сохранил, спасибо! ✅ До завтра.",
 		"form_error":  "Хм, не получилось сохранить 😞 Попробуй ещё раз чуть позже.",
+		"date_taken":  "День %s уже заполнен — выбери другую дату.",
 	},
 }
 

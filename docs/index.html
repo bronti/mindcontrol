@@ -15,6 +15,13 @@
 
     <form id="form">
 
+      <!-- ===== Date being filled in ===== -->
+      <label class="field date-field">
+        <span data-translate="q_date">Date</span>
+        <input type="date" name="date" id="dateInput">
+      </label>
+      <p class="date-taken-msg" id="dateWarning" data-translate="date_taken" hidden>This date is already filled — pick another.</p>
+
       <!-- ===== Sleep ===== -->
       <section class="group">
         <h2 class="group-title" data-translate="sec_sleep">Sleep</h2>
