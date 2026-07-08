@@ -3,7 +3,8 @@ package main
 import (
 	"context"
 	"fmt"
-	"log"
+	"sort"
+	"strings"
 
 	"google.golang.org/api/option"
 	"google.golang.org/api/sheets/v4"
@@ -105,6 +106,66 @@ func updateRow(rowNumber int, values []interface{}) error {
 	return nil
 }
 
+// calendarData encodes the filled days for the calendar view as a compact,
+// URL-safe string: entries joined by "_", fields by ".", the date as YYYYMMDD,
+// and each part's token = its rating, "f" (part filled but unrated), or "-" (part
+// not filled). Only days with something filled are included; capped to the most
+// recent days to keep the URL short.
+func calendarData() (string, error) {
+	rows, err := readDataRows()
+	if err != nil {
+		return "", err
+	}
+	restedIdx := columnIndex("How rested")
+	stateIdx := columnIndex("Overall state")
+
+	entries := make([]string, 0, len(rows))
+	for _, row := range rows {
+		if len(row) == 0 {
+			continue
+		}
+		date := fmt.Sprint(row[0])
+		if date == "" {
+			continue
+		}
+		sleepFilled := partFilled(row, ownerSleep)
+		dayFilled := partFilled(row, ownerDay)
+		if !sleepFilled && !dayFilled {
+			continue
+		}
+		top := calToken(sleepFilled, cellString(row, restedIdx))
+		bottom := calToken(dayFilled, cellString(row, stateIdx))
+		entries = append(entries, strings.ReplaceAll(date, "-", "")+"."+top+"."+bottom)
+	}
+
+	sort.Strings(entries) // YYYYMMDD prefix sorts chronologically
+	const maxDays = 120
+	if len(entries) > maxDays {
+		entries = entries[len(entries)-maxDays:]
+	}
+	return strings.Join(entries, "_"), nil
+}
+
+// calToken is a part's calendar token: "-" if the part isn't filled, "f" if it's
+// filled but has no rating, otherwise the rating value.
+func calToken(filled bool, value string) string {
+	if !filled {
+		return "-"
+	}
+	if value == "" {
+		return "f"
+	}
+	return value
+}
+
+// cellString safely reads a cell as a string ("" if out of range).
+func cellString(row []interface{}, idx int) string {
+	if idx >= 0 && idx < len(row) {
+		return fmt.Sprint(row[idx])
+	}
+	return ""
+}
+
 // filledByPart reads all rows once and returns the dates where the sleep part and
 // the day part are already filled. Used to grey out days in each form.
 func filledByPart() (sleepDates, dayDates []string, err error) {
@@ -130,11 +191,11 @@ func filledByPart() (sleepDates, dayDates []string, err error) {
 	return sleepDates, dayDates, nil
 }
 
-// ensureHeader writes the header row to the top of the Makhi-Bot tab, but only
-// when the tab is empty. If row 1 already has content it is left untouched (so we
-// never clobber existing data); a mismatch is logged so you can clear the tab and
-// let the bot write a fresh header if you want.
-func ensureHeader(header []interface{}) error {
+// syncHeader writes the current column headers into row 1. This is
+// non-destructive — row 1 holds only labels, never data — so it keeps the
+// sheet's header in step with the code as columns are renamed or appended,
+// WITHOUT ever clearing the tab (which now holds real data).
+func syncHeader(header []interface{}) error {
 	ctx := context.Background()
 
 	srv, err := sheets.NewService(ctx, option.WithCredentialsFile("google-cloud-key.json"))
@@ -142,41 +203,13 @@ func ensureHeader(header []interface{}) error {
 		return fmt.Errorf("connecting to Google Sheets: %w", err)
 	}
 
-	resp, err := srv.Spreadsheets.Values.Get(spreadsheetID, "'Makhi-Bot'!1:1").Do()
-	if err != nil {
-		return fmt.Errorf("reading the header row: %w", err)
-	}
-
-	// Row 1 already has something in it — don't overwrite it.
-	if len(resp.Values) > 0 && len(resp.Values[0]) > 0 {
-		if !headerMatches(resp.Values[0], header) {
-			log.Print("warning: the Makhi-Bot tab's first row doesn't match the expected header — " +
-				"clear the tab if you want the bot to write a fresh header")
-		}
-		return nil
-	}
-
-	// Empty tab: write the header as row 1.
+	rng := fmt.Sprintf("'Makhi-Bot'!A1:%s1", lastColumnLetter())
 	_, err = srv.Spreadsheets.Values.
-		Update(spreadsheetID, "'Makhi-Bot'!A1", &sheets.ValueRange{Values: [][]interface{}{header}}).
+		Update(spreadsheetID, rng, &sheets.ValueRange{Values: [][]interface{}{header}}).
 		ValueInputOption("RAW").
 		Do()
 	if err != nil {
 		return fmt.Errorf("writing the header row: %w", err)
 	}
-	log.Print("Wrote the header row to the Makhi-Bot tab")
 	return nil
-}
-
-// headerMatches reports whether the sheet's first row equals the expected header.
-func headerMatches(got, want []interface{}) bool {
-	if len(got) != len(want) {
-		return false
-	}
-	for i := range want {
-		if fmt.Sprint(got[i]) != fmt.Sprint(want[i]) {
-			return false
-		}
-	}
-	return true
 }

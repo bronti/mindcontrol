@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Makhi-Bot · calendar</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <!-- Load the stylesheet with the ?v= from the page URL so a new bot version busts the cache -->
+  <script>
+    (function () {
+      var v = new URLSearchParams(location.search).get("v");
+      var suffix = v ? "?v=" + encodeURIComponent(v) : "";
+      document.write('<link rel="stylesheet" href="style.css' + suffix + '">');
+    })();
+  </script>
+  <noscript><link rel="stylesheet" href="style.css"></noscript>
+</head>
+<body>
+  <main class="card">
+    <div class="cal-header">
+      <button type="button" class="cal-nav" id="prev" aria-label="previous">‹</button>
+      <h1 id="monthLabel">—</h1>
+      <button type="button" class="cal-nav" id="next" aria-label="next">›</button>
+    </div>
+
+    <div class="cal-weekdays" id="weekdays"></div>
+    <div class="cal-grid" id="grid"></div>
+
+    <div class="cal-legend">
+      <div class="cal-legend-row">
+        <span class="cal-legend-cell"><span class="cal-half cal-top"></span><span class="cal-half cal-bot"></span></span>
+        <span id="legendParts">top = sleep · bottom = day</span>
+      </div>
+      <div class="cal-legend-row">
+        <span class="cal-scale"></span>
+        <span id="legendScale">low → high</span>
+      </div>
+    </div>
+  </main>
+
+  <!-- Load calendar.js with the same ?v= cache-buster -->
+  <script>
+    (function () {
+      var v = new URLSearchParams(location.search).get("v");
+      var suffix = v ? "?v=" + encodeURIComponent(v) : "";
+      document.write('<script src="calendar.js' + suffix + '"><\/script>');
+    })();
+  </script>
+</body>
+</html>

@@ -93,6 +93,20 @@ func TestDreamNoteDroppedWhenNone(t *testing.T) {
 	}
 }
 
+// Calendar tokens: "-" when the part isn't filled, "f" when filled but unrated,
+// otherwise the rating value.
+func TestCalToken(t *testing.T) {
+	if got := calToken(false, "3"); got != "-" {
+		t.Errorf("not filled: got %q, want -", got)
+	}
+	if got := calToken(true, ""); got != "f" {
+		t.Errorf("filled unrated: got %q, want f", got)
+	}
+	if got := calToken(true, "4"); got != "4" {
+		t.Errorf("filled rated: got %q, want 4", got)
+	}
+}
+
 // An untouched slider (nil) must be blank, but a touched 0 is a real answer.
 func TestNumCellEmptyWhenNil(t *testing.T) {
 	if got := numCell(nil); got != "" {

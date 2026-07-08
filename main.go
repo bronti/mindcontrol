@@ -73,7 +73,7 @@ var columns = []struct {
 	{"Fell asleep", ownerSleep, func(a formAnswers) interface{} { return a.Bedtime }},
 	{"Woke up", ownerSleep, func(a formAnswers) interface{} { return a.Wake }},
 	{"Sleep hours", ownerSleep, func(a formAnswers) interface{} { return sleepCell(a.SleepHours) }},
-	{"Sleep quality", ownerSleep, func(a formAnswers) interface{} { return numCell(a.SleepQuality) }},
+	{"How rested", ownerSleep, func(a formAnswers) interface{} { return numCell(a.SleepQuality) }},
 	{"Dreams", ownerSleep, func(a formAnswers) interface{} { return a.Dreams }},
 	{"Dream notes", ownerSleep, func(a formAnswers) interface{} { return dreamNote(a) }},
 	{"Sleep medications", ownerSleep, func(a formAnswers) interface{} { return formatMedications(a.SleepMedications) }},
@@ -132,6 +132,16 @@ func mergeRow(existing []interface{}, a formAnswers, part string) []interface{} 
 		}
 	}
 	return row
+}
+
+// columnIndex returns the position of a column by its header, or -1 if absent.
+func columnIndex(header string) int {
+	for i, c := range columns {
+		if c.header == header {
+			return i
+		}
+	}
+	return -1
 }
 
 // partFilled reports whether a row already has any value in the given part's columns.
@@ -208,9 +218,9 @@ func main() {
 	}
 	log.Printf("Bot started: @%s. Send it /ping in Telegram", bot.Self.UserName)
 
-	// Make sure the sheet has a header row (written once, only when the tab is empty).
-	if err := ensureHeader(headerRow()); err != nil {
-		log.Printf("could not check/write the header row: %v", err)
+	// Keep the sheet's header row in step with the code (non-destructive).
+	if err := syncHeader(headerRow()); err != nil {
+		log.Printf("could not sync the header row: %v", err)
 	}
 
 	// Load local settings (chat id + reminder times) and start the reminder loop.
@@ -295,7 +305,38 @@ func formKeyboard(baseURL string) tgbotapi.ReplyKeyboardMarkup {
 		tgbotapi.WebAppInfo{URL: buildFormURL(baseURL, ownerSleep, "", sleepFilled)})
 	dayBtn := tgbotapi.NewKeyboardButtonWebApp(translate("open_day"),
 		tgbotapi.WebAppInfo{URL: buildFormURL(baseURL, ownerDay, "", dayFilled)})
-	return tgbotapi.NewReplyKeyboard(tgbotapi.NewKeyboardButtonRow(sleepBtn, dayBtn))
+	calBtn := tgbotapi.NewKeyboardButtonWebApp(translate("open_calendar"),
+		tgbotapi.WebAppInfo{URL: calendarURL(baseURL)})
+	return tgbotapi.NewReplyKeyboard(
+		tgbotapi.NewKeyboardButtonRow(sleepBtn, dayBtn),
+		tgbotapi.NewKeyboardButtonRow(calBtn),
+	)
+}
+
+// calendarURL builds the URL for the calendar page (calendar.html), carrying the
+// cache-buster version and the compact per-day data.
+func calendarURL(baseURL string) string {
+	data, err := calendarData()
+	if err != nil {
+		log.Printf("could not read calendar data: %v", err)
+	}
+	u, err := url.Parse(baseURL)
+	if err != nil {
+		return baseURL
+	}
+	if !strings.HasSuffix(u.Path, "/") {
+		u.Path += "/"
+	}
+	u.Path += "calendar.html"
+	q := u.Query()
+	if formVersion != "" {
+		q.Set("v", formVersion)
+	}
+	if data != "" {
+		q.Set("days", data)
+	}
+	u.RawQuery = q.Encode()
+	return u.String()
 }
 
 // dayKeyboard builds a keyboard with just the Day-form button, optionally

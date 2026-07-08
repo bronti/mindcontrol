@@ -17,7 +17,7 @@ const translations = {
     q_wake: "Woke up at",
     sleep_duration_label: "Sleep duration",
 
-    q_sleep_quality: "Sleep quality",
+    q_sleep_quality: "How rested",
     q_dreams: "Dreams?",
     dream_none: "None", dream_dreams: "Dreams", dream_nightmares: "Nightmares", dream_anxious: "Anxious",
     q_dream_note: "What was the dream about?",
@@ -76,7 +76,7 @@ const translations = {
     q_wake: "Проснулся(лась) в",
     sleep_duration_label: "Продолжительность сна",
 
-    q_sleep_quality: "Качество сна",
+    q_sleep_quality: "Насколько выспался(ась)",
     q_dreams: "Сны?",
     dream_none: "Нет", dream_dreams: "Сны", dream_nightmares: "Кошмары", dream_anxious: "Тревожные",
     q_dream_note: "О чём был сон?",
