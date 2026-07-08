@@ -65,10 +65,10 @@ func TestHeaderRowMatchesColumns(t *testing.T) {
 func TestMergeSleepThenDay(t *testing.T) {
 	sleep := formAnswers{
 		Date:         "2026-07-08",
-		FilledAt:     "2026-07-08 08:00:00",
+		LastModified: "2026-07-08 08:00:00",
 		Bedtime:      "23:30",
 		Wake:         "07:00",
-		SleepQuality: ptr(3),
+		Rested:       ptr(3),
 		Dreams:       "nightmares",
 		DreamNote:    "chased by a dog",
 	}
@@ -91,12 +91,12 @@ func TestMergeSleepThenDay(t *testing.T) {
 	}
 
 	day := formAnswers{
-		Date:     "2026-07-08",
-		FilledAt: "2026-07-08 21:30:00",
-		State:    ptr(7),
-		Headache: true,
-		Smoking:  true,
-		Note:     "long day",
+		Date:         "2026-07-08",
+		LastModified: "2026-07-08 21:30:00",
+		State:        ptr(7),
+		Headache:     true,
+		Smoking:      true,
+		Note:         "long day",
 	}
 	row2 := mergeRow(row, day, ownerDay)
 
@@ -109,8 +109,8 @@ func TestMergeSleepThenDay(t *testing.T) {
 	if got := row2[colIndex("Smoking")]; got != "yes" {
 		t.Errorf("smoking not written: %v", got)
 	}
-	if got := row2[colIndex("Filled at")]; got != "2026-07-08 21:30:00" {
-		t.Errorf("filled-at not updated: %v", got)
+	if got := row2[colIndex("Last modified")]; got != "2026-07-08 21:30:00" {
+		t.Errorf("last-modified not updated: %v", got)
 	}
 	if !partFilled(row2, ownerSleep) || !partFilled(row2, ownerDay) {
 		t.Error("both parts should be filled after both submits")

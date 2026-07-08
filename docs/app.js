@@ -21,7 +21,7 @@ const translations = {
     q_wake: "Woke up at",
     sleep_duration_label: "Sleep duration",
 
-    q_sleep_quality: "How rested",
+    q_rested: "How rested",
     q_dreams: "Dreams?",
     dream_none: "None", dream_dreams: "Dreams", dream_nightmares: "Nightmares", dream_anxious: "Anxious",
     q_dream_note: "What was the dream about?",
@@ -82,7 +82,7 @@ const translations = {
     q_wake: "Проснулся(лась) в",
     sleep_duration_label: "Продолжительность сна",
 
-    q_sleep_quality: "Насколько выспался(ась)",
+    q_rested: "Насколько выспался(ась)",
     q_dreams: "Сны?",
     dream_none: "Нет", dream_dreams: "Сны", dream_nightmares: "Кошмары", dream_anxious: "Тревожные",
     q_dream_note: "О чём был сон?",
@@ -417,7 +417,7 @@ form.addEventListener("submit", (event) => {
     bedtime: bedtime.value,
     wake: wake.value,
     sleep_hours: minutes === null ? null : Math.round((minutes / 60) * 100) / 100,
-    sleep_quality: sliderValue("sleep_quality"),
+    rested: sliderValue("rested"),
     dreams: form.dreams.value,
     // Only send the dream text when there were some kind of dreams — if the user
     // typed something then switched back to "none", it must not be saved.
@@ -463,7 +463,7 @@ function applyEditMode() {
   if (formMode === "sleep") {
     setTime("bedtime", p.get("p_bedtime"));
     setTime("wake", p.get("p_wake"));
-    setSlider("sleep_quality", p.get("p_rested"));
+    setSlider("rested", p.get("p_rested"));
     setRadio("dreams", p.get("p_dreams"));
     setText("dream_note", p.get("p_dream_note"));
     prefillMedsFromString(document.querySelector(".medications.part-sleep"), p.get("p_sleep_meds"));

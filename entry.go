@@ -17,11 +17,11 @@ type formAnswers struct {
 	FormType         string       `json:"form_type"` // "sleep" or "day"
 	Edit             bool         `json:"edit"`      // editing an existing entry (overwrite allowed)
 	Date             string       `json:"date"`
-	FilledAt         string       `json:"-"` // set by the bot at submit time
+	LastModified     string       `json:"-"` // set by the bot at submit time (also on edits)
 	Bedtime          string       `json:"bedtime"`
 	Wake             string       `json:"wake"`
 	SleepHours       *float64     `json:"sleep_hours"`
-	SleepQuality     *int         `json:"sleep_quality"`
+	Rested           *int         `json:"rested"`
 	Dreams           string       `json:"dreams"`
 	DreamNote        string       `json:"dream_note"`
 	SleepMedications []medication `json:"sleep_medications"`
@@ -62,7 +62,7 @@ var columns = []struct {
 	{"Fell asleep", ownerSleep, func(a formAnswers) interface{} { return a.Bedtime }},
 	{"Woke up", ownerSleep, func(a formAnswers) interface{} { return a.Wake }},
 	{"Sleep hours", ownerSleep, func(a formAnswers) interface{} { return sleepCell(a.SleepHours) }},
-	{"How rested", ownerSleep, func(a formAnswers) interface{} { return numCell(a.SleepQuality) }},
+	{"How rested", ownerSleep, func(a formAnswers) interface{} { return numCell(a.Rested) }},
 	{"Dreams", ownerSleep, func(a formAnswers) interface{} { return a.Dreams }},
 	{"Dream notes", ownerSleep, func(a formAnswers) interface{} { return dreamNote(a) }},
 	{"Sleep medications", ownerSleep, func(a formAnswers) interface{} { return formatMedications(a.SleepMedications) }},
@@ -81,7 +81,7 @@ var columns = []struct {
 	{"Smoking", ownerDay, func(a formAnswers) interface{} { return yesNo(a.Smoking) }},
 	{"Medications", ownerDay, func(a formAnswers) interface{} { return formatMedications(a.Medications) }},
 	{"Diary", ownerDay, func(a formAnswers) interface{} { return a.Note }},
-	{"Filled at", ownerMeta, func(a formAnswers) interface{} { return a.FilledAt }},
+	{"Last modified", ownerMeta, func(a formAnswers) interface{} { return a.LastModified }},
 }
 
 func headerRow() []interface{} {

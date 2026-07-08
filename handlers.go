@@ -158,7 +158,7 @@ func (s *server) handleFormSubmission(message *tgbotapi.Message) {
 		return
 	}
 
-	a.FilledAt = time.Now().Format("2006-01-02 15:04:05")
+	a.LastModified = time.Now().Format("2006-01-02 15:04:05")
 	merged := mergeRow(existing, a, a.FormType)
 	if rowNum != 0 {
 		err = updateRow(rowNum, merged)
