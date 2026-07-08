@@ -102,6 +102,13 @@ button:disabled {
   cursor: not-allowed;
 }
 
+/* A locked date (editing an existing entry) — visible but not changeable. */
+input[type="date"]:disabled {
+  opacity: 1;
+  color: var(--text);
+  cursor: default;
+}
+
 /* ---- Sleep: two time inputs + clock ---- */
 .times {
   display: flex;
@@ -290,9 +297,10 @@ input[type="range"] {
   background: var(--field-bg);
 }
 .cal-day.today { outline: 2px solid var(--accent); outline-offset: -2px; }
-.cal-half { position: absolute; left: 0; right: 0; height: 50%; }
+.cal-half { position: absolute; left: 0; right: 0; height: 50%; cursor: pointer; }
 .cal-top { top: 0; }
 .cal-bot { bottom: 0; }
+.cal-half:active { filter: brightness(1.15); }
 .cal-num {
   position: absolute;
   inset: 0;
@@ -302,6 +310,7 @@ input[type="range"] {
   font-size: 13px;
   font-weight: 600;
   color: var(--text);
+  pointer-events: none; /* let taps reach the halves underneath */
 }
 /* On a filled day the halves are coloured, so the number goes white with a shadow. */
 .cal-day.filled .cal-num {

@@ -26,6 +26,7 @@ type medication struct {
 // SleepHours is a pointer so a missing time (null) stays distinct from 0.
 type formAnswers struct {
 	FormType         string       `json:"form_type"` // "sleep" or "day" — which half of the day this is
+	Edit             bool         `json:"edit"`      // true when editing an existing entry (overwrite allowed)
 	Date             string       `json:"date"`      // the day being filled in (chosen in the form)
 	FilledAt         string       `json:"-"`         // when the form was submitted; set by the bot
 	Bedtime          string       `json:"bedtime"`
@@ -240,9 +241,9 @@ func main() {
 		// Remember which chat to send reminders to (learned from any message).
 		rememberChat(update.Message.Chat.ID)
 
-		// The form was submitted: Telegram delivers its JSON as web_app_data.
+		// The Mini App sent something back (a form submission or an edit request).
 		if update.Message.WebAppData != nil {
-			handleFormSubmission(bot, update.Message, webAppURL)
+			handleWebAppData(bot, update.Message, webAppURL)
 			continue
 		}
 
@@ -394,9 +395,124 @@ func rememberChat(chatID int64) {
 	log.Printf("reminders will be sent to chat %d", chatID)
 }
 
+// handleWebAppData routes what the Mini App sent: a calendar "edit" request (open
+// a pre-filled form for a day), or a normal form submission.
+func handleWebAppData(bot *tgbotapi.BotAPI, message *tgbotapi.Message, webAppURL string) {
+	raw := message.WebAppData.Data
+	var probe struct {
+		T string `json:"t"`
+	}
+	_ = json.Unmarshal([]byte(raw), &probe)
+	if probe.T == "edit" {
+		handleEditRequest(bot, message, webAppURL, raw)
+		return
+	}
+	handleFormSubmission(bot, message, webAppURL)
+}
+
+// handleEditRequest reads the row for the requested day and replies with a button
+// that opens the form pre-filled for that day+part (or empty, to create it).
+func handleEditRequest(bot *tgbotapi.BotAPI, message *tgbotapi.Message, webAppURL, raw string) {
+	log.Printf("[@%s] edit request: %s", message.From.UserName, raw)
+
+	var req struct {
+		Date string `json:"date"`
+		Part string `json:"part"`
+	}
+	if err := json.Unmarshal([]byte(raw), &req); err != nil ||
+		(req.Part != ownerSleep && req.Part != ownerDay) || webAppURL == "" {
+		reply(bot, message.Chat.ID, translate("form_error"))
+		return
+	}
+	if _, err := time.Parse("2006-01-02", req.Date); err != nil {
+		reply(bot, message.Chat.ID, translate("form_error"))
+		return
+	}
+
+	_, row, err := findDateRow(req.Date) // row is nil if the day has no entry yet
+	if err != nil {
+		log.Printf("could not read the day's row: %v", err)
+		reply(bot, message.Chat.ID, translate("form_error"))
+		return
+	}
+
+	msg := tgbotapi.NewMessage(message.Chat.ID,
+		fmt.Sprintf(translate("edit_prompt"), translate("part_"+req.Part), req.Date))
+	msg.ReplyMarkup = editKeyboard(webAppURL, req.Part, req.Date, row)
+	if _, err := bot.Send(msg); err != nil {
+		log.Printf("failed to send edit prompt: %v", err)
+	}
+}
+
+// editKeyboard is a single button that opens the form pre-filled for editing.
+func editKeyboard(baseURL, part, date string, row []interface{}) tgbotapi.ReplyKeyboardMarkup {
+	label := translate("open_sleep")
+	if part == ownerDay {
+		label = translate("open_day")
+	}
+	btn := tgbotapi.NewKeyboardButtonWebApp(label, tgbotapi.WebAppInfo{URL: buildEditURL(baseURL, part, date, row)})
+	return tgbotapi.NewReplyKeyboard(tgbotapi.NewKeyboardButtonRow(btn))
+}
+
+// buildEditURL opens the form for one day+part with mode=update|create, the date
+// locked, and the part's existing values pre-filled as p_* query params.
+func buildEditURL(baseURL, part, date string, row []interface{}) string {
+	u, err := url.Parse(baseURL)
+	if err != nil {
+		return baseURL
+	}
+	q := u.Query()
+	if formVersion != "" {
+		q.Set("v", formVersion)
+	}
+	q.Set("form", part)
+	q.Set("date", date)
+	if row != nil && partFilled(row, part) {
+		q.Set("mode", "update")
+	} else {
+		q.Set("mode", "create")
+	}
+
+	add := func(param, header string) {
+		idx := columnIndex(header)
+		if row != nil && idx >= 0 && idx < len(row) {
+			if v := fmt.Sprint(row[idx]); v != "" {
+				q.Set(param, v)
+			}
+		}
+	}
+	if part == ownerSleep {
+		add("p_bedtime", "Fell asleep")
+		add("p_wake", "Woke up")
+		add("p_rested", "How rested")
+		add("p_dreams", "Dreams")
+		add("p_dream_note", "Dream notes")
+		add("p_sleep_meds", "Sleep medications")
+	} else {
+		add("p_state", "Overall state")
+		add("p_anxiety", "Anxiety")
+		add("p_irritability", "Irritability")
+		add("p_libido", "Libido")
+		add("p_drowsiness", "Drowsiness")
+		add("p_appetite", "Appetite")
+		add("p_energy", "Energy")
+		add("p_ate_well", "Ate well")
+		add("p_menstruation", "Menstruation")
+		add("p_sex", "Sex")
+		add("p_masturbation", "Masturbation")
+		add("p_headache", "Headache")
+		add("p_smoking", "Smoking")
+		add("p_meds", "Medications")
+		add("p_note", "Diary")
+	}
+	u.RawQuery = q.Encode()
+	return u.String()
+}
+
 // handleFormSubmission parses one form's JSON, validates it, and merges it into
 // that day's row — creating the row if new, updating it if it already exists.
-// Re-submitting an already-filled part is refused so nothing is overwritten.
+// A normal submission refuses to overwrite an already-filled part; an edit
+// (Edit == true) is allowed to overwrite.
 func handleFormSubmission(bot *tgbotapi.BotAPI, message *tgbotapi.Message, webAppURL string) {
 	raw := message.WebAppData.Data
 	log.Printf("[@%s] form submitted: %s", message.From.UserName, raw)
@@ -427,8 +543,8 @@ func handleFormSubmission(bot *tgbotapi.BotAPI, message *tgbotapi.Message, webAp
 		return
 	}
 
-	// This part is already filled for that day — don't overwrite it.
-	if rowNum != 0 && partFilled(existing, a.FormType) {
+	// A normal submission won't overwrite an already-filled part; an edit will.
+	if !a.Edit && rowNum != 0 && partFilled(existing, a.FormType) {
 		reply(bot, message.Chat.ID, fmt.Sprintf(translate("taken_"+a.FormType), a.Date))
 		return
 	}

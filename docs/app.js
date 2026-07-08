@@ -58,6 +58,8 @@ const translations = {
     q_note: "Diary entry",
     note_placeholder: "anything you want to remember about today...",
     submit: "Save",
+    submit_update: "Update entry",
+    submit_create: "Create entry",
     browser_alert: "Sending only works inside Telegram.\nCollected answers:\n\n",
   },
   ru: {
@@ -117,6 +119,8 @@ const translations = {
     q_note: "Дневниковая запись",
     note_placeholder: "что угодно, что хочешь запомнить о дне...",
     submit: "Сохранить",
+    submit_update: "Обновить запись",
+    submit_create: "Создать запись",
     browser_alert: "Отправка работает только внутри Телеграма.\nСобранные ответы:\n\n",
   },
 };
@@ -149,6 +153,9 @@ applyTranslations();
 // This page is one of two forms, chosen by ?form=sleep|day (default: day).
 // We hide the other form's fields and only send this part on submit.
 const formMode = new URLSearchParams(location.search).get("form") === "sleep" ? "sleep" : "day";
+const editParams = new URLSearchParams(location.search);
+const editMode = editParams.has("mode"); // opened from the calendar to view/edit a day
+const editUpdate = editParams.get("mode") === "update"; // an existing entry (vs a new one)
 document.querySelector("h1").textContent = dict[formMode === "sleep" ? "title_sleep" : "title_day"];
 document.querySelector(".subtitle").textContent = dict[formMode === "sleep" ? "subtitle_sleep" : "subtitle_day"];
 document.querySelectorAll(formMode === "sleep" ? ".part-day" : ".part-sleep").forEach((el) => {
@@ -239,9 +246,12 @@ const defaultDoses = {
 document.querySelectorAll(".medications").forEach(setupMedications);
 
 // Pre-fill the usual medications (at their default doses): morning = Sleep form,
-// evening = Day form. Any of them can still be removed or have its dose changed.
-prefillMedications(document.querySelector(".medications.part-sleep"), ["Lamotrigine"]);
-prefillMedications(document.querySelector(".medications.part-day"), ["Lamotrigine", "Olanzapine", "Fluoxetine"]);
+// evening = Day form. Skipped when editing an existing entry (we load its meds
+// instead). Any of them can still be removed or have its dose changed.
+if (!editUpdate) {
+  prefillMedications(document.querySelector(".medications.part-sleep"), ["Lamotrigine"]);
+  prefillMedications(document.querySelector(".medications.part-day"), ["Lamotrigine", "Olanzapine", "Fluoxetine"]);
+}
 
 function prefillMedications(section, meds) {
   const picker = section.querySelector(".med-picker");
@@ -285,6 +295,7 @@ function addMedicationRow(picker, list, { name = "", label = "", dose = "", cust
     nameEl.type = "text";
     nameEl.className = "med-name med-name-input";
     nameEl.placeholder = dict.med_name_placeholder;
+    if (name) nameEl.value = name; // pre-filled custom medication when editing
   } else {
     nameEl = document.createElement("span");
     nameEl.className = "med-name";
@@ -400,12 +411,13 @@ const dayMedList = document.querySelector(".medications.part-day .med-list");
 form.addEventListener("submit", (event) => {
   event.preventDefault();
 
-  // Safety net: never send an already-filled date (the button is disabled too).
-  if (filledDates.has(dateInput.value)) return;
+  // Safety net: never send an already-filled date (except when editing on purpose).
+  if (!editMode && filledDates.has(dateInput.value)) return;
 
   const minutes = sleepMinutes();
   const answers = {
     form_type: formMode,
+    edit: editMode,
     date: dateInput.value,
     bedtime: bedtime.value,
     wake: wake.value,
@@ -441,3 +453,86 @@ form.addEventListener("submit", (event) => {
     alert(dict.browser_alert + JSON.stringify(answers, null, 2));
   }
 });
+
+// ---- Edit mode: locked date + pre-filled values from the ?p_* params ----
+if (editMode) applyEditMode();
+
+function applyEditMode() {
+  const p = new URLSearchParams(location.search);
+
+  // The date is fixed to the day being edited.
+  dateInput.value = p.get("date") || dateInput.value;
+  dateInput.disabled = true;
+  submitButton.textContent = editUpdate ? dict.submit_update : dict.submit_create;
+
+  if (formMode === "sleep") {
+    setTime("bedtime", p.get("p_bedtime"));
+    setTime("wake", p.get("p_wake"));
+    setSlider("sleep_quality", p.get("p_rested"));
+    setRadio("dreams", p.get("p_dreams"));
+    setText("dream_note", p.get("p_dream_note"));
+    prefillMedsFromString(document.querySelector(".medications.part-sleep"), p.get("p_sleep_meds"));
+  } else {
+    setSlider("state", p.get("p_state"));
+    setSlider("anxiety", p.get("p_anxiety"));
+    setSlider("irritability", p.get("p_irritability"));
+    setSlider("libido", p.get("p_libido"));
+    setSlider("drowsiness", p.get("p_drowsiness"));
+    setSlider("appetite", p.get("p_appetite"));
+    setSlider("energy", p.get("p_energy"));
+    setSlider("ate_well", p.get("p_ate_well"));
+    setRadio("menstruation", p.get("p_menstruation"));
+    setRadio("sex", p.get("p_sex"));
+    setRadio("masturbation", p.get("p_masturbation"));
+    setRadio("headache", p.get("p_headache"));
+    setRadio("smoking", p.get("p_smoking"));
+    setText("note", p.get("p_note"));
+    prefillMedsFromString(document.querySelector(".medications.part-day"), p.get("p_meds"));
+  }
+}
+
+function setTime(name, value) {
+  if (!value) return;
+  form[name].value = value;
+  form[name].dispatchEvent(new Event("input")); // redraw the sleep arc
+}
+function setSlider(name, value) {
+  if (value === null || value === "" || value === undefined) return;
+  const range = form[name];
+  const slider = range.closest(".slider");
+  range.value = value;
+  slider.classList.remove("untouched"); // a saved value counts as touched
+  slider.querySelector("output").textContent = range.value;
+}
+function setRadio(name, value) {
+  if (!value) return;
+  form.querySelectorAll(`input[name="${name}"]`).forEach((r) => {
+    r.checked = r.value === value;
+  });
+  if (name === "dreams") updateDreamNote();
+}
+function setText(name, value) {
+  if (value) form[name].value = value;
+}
+function prefillMedsFromString(section, str) {
+  if (!str) return;
+  const picker = section.querySelector(".med-picker");
+  const list = section.querySelector(".med-list");
+  str
+    .split(";")
+    .map((s) => s.trim())
+    .filter(Boolean)
+    .forEach((item) => {
+      const m = item.match(/^(.*?)\s+([\d.]+)mg$/); // "Name 200mg" -> name, dose
+      const name = m ? m[1] : item;
+      const dose = m ? m[2] : "";
+      const option = picker.querySelector(`option[value="${name}"]`);
+      if (option) {
+        addMedicationRow(picker, list, { name: name, label: option.textContent, dose: dose });
+        option.hidden = true;
+        option.disabled = true;
+      } else {
+        addMedicationRow(picker, list, { custom: true, name: name, dose: dose });
+      }
+    });
+}

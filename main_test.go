@@ -1,8 +1,27 @@
 package main
 
-import "testing"
+import (
+	"strings"
+	"testing"
+)
 
 func ptr(i int) *int { return &i }
+
+// buildEditURL must carry the mode, the part's values as p_* params, and the date.
+func TestBuildEditURL(t *testing.T) {
+	row := mergeRow(nil, formAnswers{Date: "2026-07-03", State: ptr(7), Menstruation: true}, ownerDay)
+	u := buildEditURL("https://x/", ownerDay, "2026-07-03", row)
+	for _, want := range []string{"form=day", "mode=update", "date=2026-07-03", "p_state=7", "p_menstruation=yes"} {
+		if !strings.Contains(u, want) {
+			t.Errorf("edit URL %q missing %q", u, want)
+		}
+	}
+	// A day with no entry yet → create mode, no pre-fill params.
+	empty := buildEditURL("https://x/", ownerSleep, "2026-07-04", nil)
+	if !strings.Contains(empty, "mode=create") || strings.Contains(empty, "p_") {
+		t.Errorf("expected create mode with no p_ params, got %q", empty)
+	}
+}
 
 // colIndex finds a column by its header (so tests don't break on a reorder).
 func colIndex(header string) int {

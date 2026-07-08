@@ -12,6 +12,12 @@ if (tg) {
 const ru =
   tg && tg.initDataUnsafe && tg.initDataUnsafe.user && tg.initDataUnsafe.user.language_code === "ru";
 
+// Tapping a day's half asks the bot to open that entry (it replies with a
+// pre-filled edit button). Closes the calendar.
+function sendEdit(date, part) {
+  if (tg) tg.sendData(JSON.stringify({ t: "edit", date: date, part: part }));
+}
+
 const text = {
   weekdays: ru ? ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"] : ["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"],
   months: ru
@@ -94,6 +100,9 @@ function render() {
       top.style.background = halfColor(rec.top, 4);
       bottom.style.background = halfColor(rec.bottom, 10);
     }
+    // Tap a half to view/edit that part of the day (top = sleep, bottom = day).
+    top.addEventListener("click", () => sendEdit(dayIso, "sleep"));
+    bottom.addEventListener("click", () => sendEdit(dayIso, "day"));
 
     const num = document.createElement("span");
     num.className = "cal-num";
