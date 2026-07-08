@@ -53,35 +53,41 @@ const (
 // columns is the single source of truth for the Makhi-Bot tab: this order defines
 // both the header row and every data row, grouped date | sleep… | day… | filled-at.
 // Only reorder while the tab is empty — a reorder misaligns existing rows.
+//
+// editParam is the URL query param that carries the column's saved value into the
+// edit form (see buildEditURL); it must match what docs/app.js reads. "" means the
+// column is never pre-filled (meta columns, and "Sleep hours" — the form recomputes
+// it from the times).
 var columns = []struct {
-	header string
-	owner  string
-	value  func(a formAnswers) interface{}
+	header    string
+	owner     string
+	editParam string
+	value     func(a formAnswers) interface{}
 }{
-	{"Date", ownerMeta, func(a formAnswers) interface{} { return a.Date }},
-	{"Fell asleep", ownerSleep, func(a formAnswers) interface{} { return a.Bedtime }},
-	{"Woke up", ownerSleep, func(a formAnswers) interface{} { return a.Wake }},
-	{"Sleep hours", ownerSleep, func(a formAnswers) interface{} { return sleepCell(a.SleepHours) }},
-	{"How rested", ownerSleep, func(a formAnswers) interface{} { return numCell(a.Rested) }},
-	{"Dreams", ownerSleep, func(a formAnswers) interface{} { return a.Dreams }},
-	{"Dream notes", ownerSleep, func(a formAnswers) interface{} { return dreamNote(a) }},
-	{"Sleep medications", ownerSleep, func(a formAnswers) interface{} { return formatMedications(a.SleepMedications) }},
-	{"Overall state", ownerDay, func(a formAnswers) interface{} { return numCell(a.State) }},
-	{"Anxiety", ownerDay, func(a formAnswers) interface{} { return numCell(a.Anxiety) }},
-	{"Irritability", ownerDay, func(a formAnswers) interface{} { return numCell(a.Irritability) }},
-	{"Libido", ownerDay, func(a formAnswers) interface{} { return numCell(a.Libido) }},
-	{"Drowsiness", ownerDay, func(a formAnswers) interface{} { return numCell(a.Drowsiness) }},
-	{"Appetite", ownerDay, func(a formAnswers) interface{} { return numCell(a.Appetite) }},
-	{"Energy", ownerDay, func(a formAnswers) interface{} { return numCell(a.Energy) }},
-	{"Ate well", ownerDay, func(a formAnswers) interface{} { return numCell(a.AteWell) }},
-	{"Menstruation", ownerDay, func(a formAnswers) interface{} { return yesNo(a.Menstruation) }},
-	{"Sex", ownerDay, func(a formAnswers) interface{} { return yesNo(a.Sex) }},
-	{"Masturbation", ownerDay, func(a formAnswers) interface{} { return yesNo(a.Masturbation) }},
-	{"Headache", ownerDay, func(a formAnswers) interface{} { return yesNo(a.Headache) }},
-	{"Smoking", ownerDay, func(a formAnswers) interface{} { return yesNo(a.Smoking) }},
-	{"Medications", ownerDay, func(a formAnswers) interface{} { return formatMedications(a.Medications) }},
-	{"Diary", ownerDay, func(a formAnswers) interface{} { return a.Note }},
-	{"Last modified", ownerMeta, func(a formAnswers) interface{} { return a.LastModified }},
+	{"Date", ownerMeta, "", func(a formAnswers) interface{} { return a.Date }},
+	{"Fell asleep", ownerSleep, "p_bedtime", func(a formAnswers) interface{} { return a.Bedtime }},
+	{"Woke up", ownerSleep, "p_wake", func(a formAnswers) interface{} { return a.Wake }},
+	{"Sleep hours", ownerSleep, "", func(a formAnswers) interface{} { return sleepCell(a.SleepHours) }},
+	{"How rested", ownerSleep, "p_rested", func(a formAnswers) interface{} { return numCell(a.Rested) }},
+	{"Dreams", ownerSleep, "p_dreams", func(a formAnswers) interface{} { return a.Dreams }},
+	{"Dream notes", ownerSleep, "p_dream_note", func(a formAnswers) interface{} { return dreamNote(a) }},
+	{"Sleep medications", ownerSleep, "p_sleep_meds", func(a formAnswers) interface{} { return formatMedications(a.SleepMedications) }},
+	{"Overall state", ownerDay, "p_state", func(a formAnswers) interface{} { return numCell(a.State) }},
+	{"Anxiety", ownerDay, "p_anxiety", func(a formAnswers) interface{} { return numCell(a.Anxiety) }},
+	{"Irritability", ownerDay, "p_irritability", func(a formAnswers) interface{} { return numCell(a.Irritability) }},
+	{"Libido", ownerDay, "p_libido", func(a formAnswers) interface{} { return numCell(a.Libido) }},
+	{"Drowsiness", ownerDay, "p_drowsiness", func(a formAnswers) interface{} { return numCell(a.Drowsiness) }},
+	{"Appetite", ownerDay, "p_appetite", func(a formAnswers) interface{} { return numCell(a.Appetite) }},
+	{"Energy", ownerDay, "p_energy", func(a formAnswers) interface{} { return numCell(a.Energy) }},
+	{"Ate well", ownerDay, "p_ate_well", func(a formAnswers) interface{} { return numCell(a.AteWell) }},
+	{"Menstruation", ownerDay, "p_menstruation", func(a formAnswers) interface{} { return yesNo(a.Menstruation) }},
+	{"Sex", ownerDay, "p_sex", func(a formAnswers) interface{} { return yesNo(a.Sex) }},
+	{"Masturbation", ownerDay, "p_masturbation", func(a formAnswers) interface{} { return yesNo(a.Masturbation) }},
+	{"Headache", ownerDay, "p_headache", func(a formAnswers) interface{} { return yesNo(a.Headache) }},
+	{"Smoking", ownerDay, "p_smoking", func(a formAnswers) interface{} { return yesNo(a.Smoking) }},
+	{"Medications", ownerDay, "p_meds", func(a formAnswers) interface{} { return formatMedications(a.Medications) }},
+	{"Diary", ownerDay, "p_note", func(a formAnswers) interface{} { return a.Note }},
+	{"Last modified", ownerMeta, "", func(a formAnswers) interface{} { return a.LastModified }},
 }
 
 func headerRow() []interface{} {

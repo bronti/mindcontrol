@@ -64,37 +64,15 @@ func buildEditURL(baseURL, part, date string, row []interface{}, defaultMeds str
 		}
 	}
 
-	prefill := func(param, header string) {
-		idx := columnIndex(header)
-		if row != nil && idx >= 0 && idx < len(row) {
-			if v := fmt.Sprint(row[idx]); v != "" {
-				q.Set(param, v)
-			}
+	// Pre-fill the part's saved values: every column that has an editParam rides
+	// along as ?p_*=… (which params exist per column is part of the schema).
+	for i, c := range columns {
+		if c.owner != part || c.editParam == "" || i >= len(row) {
+			continue
 		}
-	}
-	if part == ownerSleep {
-		prefill("p_bedtime", "Fell asleep")
-		prefill("p_wake", "Woke up")
-		prefill("p_rested", "How rested")
-		prefill("p_dreams", "Dreams")
-		prefill("p_dream_note", "Dream notes")
-		prefill("p_sleep_meds", "Sleep medications")
-	} else {
-		prefill("p_state", "Overall state")
-		prefill("p_anxiety", "Anxiety")
-		prefill("p_irritability", "Irritability")
-		prefill("p_libido", "Libido")
-		prefill("p_drowsiness", "Drowsiness")
-		prefill("p_appetite", "Appetite")
-		prefill("p_energy", "Energy")
-		prefill("p_ate_well", "Ate well")
-		prefill("p_menstruation", "Menstruation")
-		prefill("p_sex", "Sex")
-		prefill("p_masturbation", "Masturbation")
-		prefill("p_headache", "Headache")
-		prefill("p_smoking", "Smoking")
-		prefill("p_meds", "Medications")
-		prefill("p_note", "Diary")
+		if v := fmt.Sprint(row[i]); v != "" {
+			q.Set(c.editParam, v)
+		}
 	}
 	u.RawQuery = q.Encode()
 	return u.String()

@@ -89,16 +89,6 @@ func TestLatestMedicationsRows(t *testing.T) {
 	}
 }
 
-// colIndex finds a column by its header (so tests don't break on a reorder).
-func colIndex(header string) int {
-	for i, c := range columns {
-		if c.header == header {
-			return i
-		}
-	}
-	return -1
-}
-
 func TestHeaderRowMatchesColumns(t *testing.T) {
 	if len(headerRow()) != len(columns) {
 		t.Fatalf("header has %d entries but columns has %d", len(headerRow()), len(columns))
@@ -122,13 +112,13 @@ func TestMergeSleepThenDay(t *testing.T) {
 	}
 	row := mergeRow(nil, sleep, ownerSleep)
 
-	if got := row[colIndex("Fell asleep")]; got != "23:30" {
+	if got := row[columnIndex("Fell asleep")]; got != "23:30" {
 		t.Errorf("bedtime not written: %v", got)
 	}
-	if got := row[colIndex("Dream notes")]; got != "chased by a dog" {
+	if got := row[columnIndex("Dream notes")]; got != "chased by a dog" {
 		t.Errorf("dream note not written: %v", got)
 	}
-	if got := row[colIndex("Overall state")]; got != "" {
+	if got := row[columnIndex("Overall state")]; got != "" {
 		t.Errorf("day column should stay empty after a sleep submit, got %v", got)
 	}
 	if !partFilled(row, ownerSleep) {
@@ -148,16 +138,16 @@ func TestMergeSleepThenDay(t *testing.T) {
 	}
 	row2 := mergeRow(row, day, ownerDay)
 
-	if got := row2[colIndex("Fell asleep")]; got != "23:30" {
+	if got := row2[columnIndex("Fell asleep")]; got != "23:30" {
 		t.Errorf("sleep column lost after day merge: %v", got)
 	}
-	if got := row2[colIndex("Overall state")]; got != 7 {
+	if got := row2[columnIndex("Overall state")]; got != 7 {
 		t.Errorf("state not written: %v", got)
 	}
-	if got := row2[colIndex("Smoking")]; got != "yes" {
+	if got := row2[columnIndex("Smoking")]; got != "yes" {
 		t.Errorf("smoking not written: %v", got)
 	}
-	if got := row2[colIndex("Last modified")]; got != "2026-07-08 21:30:00" {
+	if got := row2[columnIndex("Last modified")]; got != "2026-07-08 21:30:00" {
 		t.Errorf("last-modified not updated: %v", got)
 	}
 	if !partFilled(row2, ownerSleep) || !partFilled(row2, ownerDay) {
