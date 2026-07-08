@@ -3,13 +3,13 @@ module mindcontrol
 go 1.26.4
 
 require (
+	cloud.google.com/go/auth v0.20.0
 	github.com/OvyFlash/telegram-bot-api v0.0.0-20260706090024-ac50f6fbf49c
 	github.com/joho/godotenv v1.5.1
 	google.golang.org/api v0.287.0
 )
 
 require (
-	cloud.google.com/go/auth v0.20.0 // indirect
 	cloud.google.com/go/auth/oauth2adapt v0.2.8 // indirect
 	cloud.google.com/go/compute/metadata v0.9.0 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect

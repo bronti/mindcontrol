@@ -3,11 +3,11 @@ package main
 import (
 	"context"
 	"fmt"
-	"os"
 	"sort"
 	"strings"
 	"sync"
 
+	"cloud.google.com/go/auth/credentials"
 	"google.golang.org/api/option"
 	"google.golang.org/api/sheets/v4"
 )
@@ -28,13 +28,16 @@ var (
 
 func service() (*sheets.Service, error) {
 	sheetsOnce.Do(func() {
-		key, err := os.ReadFile(credentialsFile)
+		creds, err := credentials.DetectDefault(&credentials.DetectOptions{
+			CredentialsFile: credentialsFile,
+			Scopes:          []string{sheets.SpreadsheetsScope},
+		})
 		if err != nil {
 			sheetsErr = err
 			return
 		}
 		sheetsSvc, sheetsErr = sheets.NewService(context.Background(),
-			option.WithCredentialsJSON(key))
+			option.WithAuthCredentials(creds))
 	})
 	if sheetsErr != nil {
 		return nil, fmt.Errorf("connecting to Google Sheets: %w", sheetsErr)
