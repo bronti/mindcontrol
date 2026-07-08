@@ -181,9 +181,8 @@ func calendarDataRows(rows [][]interface{}) string {
 	}
 
 	sort.Strings(entries) // YYYYMMDD prefix sorts chronologically
-	const maxDays = 120
-	if len(entries) > maxDays {
-		entries = entries[len(entries)-maxDays:]
+	if len(entries) > maxURLDays {
+		entries = entries[len(entries)-maxURLDays:]
 	}
 	return strings.Join(entries, "_")
 }

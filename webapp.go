@@ -9,8 +9,10 @@ import (
 	"time"
 )
 
-// Keep the "filled dates" list in a form URL bounded so it can't grow forever.
-const maxFilledDates = 120
+// maxURLDays caps every per-day list that rides in a Mini App URL (the form's
+// filled dates, the calendar's day data) at the most recent N days, so the URLs
+// can't grow forever as entries accumulate.
+const maxURLDays = 120
 
 // cacheVersion is added to every form URL as ?v=… to bust Telegram's Mini App
 // cache. It's the current time, so each open fetches the page and its assets
@@ -101,8 +103,8 @@ func calendarURL(baseURL, days string) string {
 func recentDates(dates []string) []string {
 	sorted := append([]string(nil), dates...)
 	sort.Strings(sorted)
-	if len(sorted) > maxFilledDates {
-		sorted = sorted[len(sorted)-maxFilledDates:]
+	if len(sorted) > maxURLDays {
+		sorted = sorted[len(sorted)-maxURLDays:]
 	}
 	return sorted
 }
