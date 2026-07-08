@@ -205,8 +205,9 @@ func (s *server) formKeyboard() tgbotapi.ReplyKeyboardMarkup {
 	if err != nil {
 		log.Printf("could not read calendar data: %v", err)
 	}
-	sleepBtn := s.webAppButton("open_sleep", buildFormURL(s.webAppURL, ownerSleep, "", sleepFilled))
-	dayBtn := s.webAppButton("open_day", buildFormURL(s.webAppURL, ownerDay, "", dayFilled))
+	today := time.Now().Format(isoDate)
+	sleepBtn := s.webAppButton("open_sleep", buildFormURL(s.webAppURL, ownerSleep, "", sleepFilled, latestMedsOrLog(ownerSleep, today)))
+	dayBtn := s.webAppButton("open_day", buildFormURL(s.webAppURL, ownerDay, "", dayFilled, latestMedsOrLog(ownerDay, today)))
 	calBtn := s.webAppButton("open_calendar", calendarURL(s.webAppURL, days))
 	return tgbotapi.NewReplyKeyboard(
 		tgbotapi.NewKeyboardButtonRow(sleepBtn, dayBtn),
@@ -221,7 +222,11 @@ func (s *server) dayKeyboard(targetDate string) tgbotapi.ReplyKeyboardMarkup {
 	if err != nil {
 		log.Printf("could not read filled dates: %v", err)
 	}
-	btn := s.webAppButton("open_day", buildFormURL(s.webAppURL, ownerDay, targetDate, dayFilled))
+	before := targetDate
+	if before == "" {
+		before = time.Now().Format(isoDate)
+	}
+	btn := s.webAppButton("open_day", buildFormURL(s.webAppURL, ownerDay, targetDate, dayFilled, latestMedsOrLog(ownerDay, before)))
 	return tgbotapi.NewReplyKeyboard(tgbotapi.NewKeyboardButtonRow(btn))
 }
 
@@ -231,8 +236,18 @@ func (s *server) editKeyboard(part, date string, row []interface{}) tgbotapi.Rep
 	if part == ownerDay {
 		labelKey = "open_day"
 	}
-	btn := s.webAppButton(labelKey, buildEditURL(s.webAppURL, part, date, row))
+	btn := s.webAppButton(labelKey, buildEditURL(s.webAppURL, part, date, row, latestMedsOrLog(part, date)))
 	return tgbotapi.NewReplyKeyboard(tgbotapi.NewKeyboardButtonRow(btn))
+}
+
+// latestMedsOrLog fetches the most recent prior medications for a part, logging
+// (but swallowing) a read error so a hiccup just yields no pre-fill.
+func latestMedsOrLog(part, before string) string {
+	meds, err := latestMedications(part, before)
+	if err != nil {
+		log.Printf("could not read latest medications for %s: %v", part, err)
+	}
+	return meds
 }
 
 func (s *server) webAppButton(labelKey, link string) tgbotapi.KeyboardButton {

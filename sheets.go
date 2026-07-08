@@ -191,6 +191,42 @@ func filledByPart() (sleepDates, dayDates []string, err error) {
 	return sleepDates, dayDates, nil
 }
 
+// medHeader is the sheet column that holds a part's medications.
+func medHeader(part string) string {
+	if part == ownerSleep {
+		return "Sleep medications"
+	}
+	return "Medications"
+}
+
+// latestMedications returns the medications cell from the most recent entry
+// before `before` (an ISO date) that has medications for the given part — so a
+// new form can pre-fill the usual drugs at their last-used doses instead of a
+// fixed list. The cell is already in the "Name 200mg; Other 3mg" format the form
+// parses. Empty string when there's no such entry.
+func latestMedications(part, before string) (string, error) {
+	rows, err := readDataRows()
+	if err != nil {
+		return "", err
+	}
+	medIdx := columnIndex(medHeader(part))
+	bestDate, bestMeds := "", ""
+	for _, row := range rows {
+		date := cellString(row, 0)
+		meds := cellString(row, medIdx)
+		if date == "" || meds == "" {
+			continue
+		}
+		if before != "" && date >= before {
+			continue // only entries strictly before the day being filled
+		}
+		if date > bestDate { // ISO dates sort chronologically
+			bestDate, bestMeds = date, meds
+		}
+	}
+	return bestMeds, nil
+}
+
 // syncHeader writes the current column headers into row 1. This is
 // non-destructive — row 1 holds only labels, never data — so it keeps the
 // sheet's header in step with the code as columns are renamed or appended,

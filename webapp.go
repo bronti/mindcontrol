@@ -20,9 +20,9 @@ func cacheVersion() string {
 }
 
 // buildFormURL points at the form in one mode (?form=sleep|day), optionally with a
-// pre-selected date and the dates whose matching part is already filled (so the
-// form can grey them out).
-func buildFormURL(baseURL, part, targetDate string, filled []string) string {
+// pre-selected date, the dates whose matching part is already filled (so the form
+// can grey them out), and the medications to pre-fill from the most recent entry.
+func buildFormURL(baseURL, part, targetDate string, filled []string, defaultMeds string) string {
 	u, err := url.Parse(baseURL)
 	if err != nil {
 		return baseURL
@@ -36,13 +36,16 @@ func buildFormURL(baseURL, part, targetDate string, filled []string) string {
 	if len(filled) > 0 {
 		q.Set("filled", strings.Join(recentDates(filled), ","))
 	}
+	if defaultMeds != "" {
+		q.Set("def_meds", defaultMeds)
+	}
 	u.RawQuery = q.Encode()
 	return u.String()
 }
 
 // buildEditURL opens the form for one day+part to edit: the date is locked, the
 // mode is update|create, and the part's existing values ride along as p_* params.
-func buildEditURL(baseURL, part, date string, row []interface{}) string {
+func buildEditURL(baseURL, part, date string, row []interface{}, defaultMeds string) string {
 	u, err := url.Parse(baseURL)
 	if err != nil {
 		return baseURL
@@ -55,6 +58,10 @@ func buildEditURL(baseURL, part, date string, row []interface{}) string {
 		q.Set("mode", "update")
 	} else {
 		q.Set("mode", "create")
+		// A brand-new entry from the calendar still gets the usual meds pre-filled.
+		if defaultMeds != "" {
+			q.Set("def_meds", defaultMeds)
+		}
 	}
 
 	prefill := func(param, header string) {

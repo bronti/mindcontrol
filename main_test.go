@@ -10,16 +10,34 @@ func ptr(i int) *int { return &i }
 // buildEditURL must carry the mode, the part's values as p_* params, and the date.
 func TestBuildEditURL(t *testing.T) {
 	row := mergeRow(nil, formAnswers{Date: "2026-07-03", State: ptr(7), Menstruation: true}, ownerDay)
-	u := buildEditURL("https://x/", ownerDay, "2026-07-03", row)
+	u := buildEditURL("https://x/", ownerDay, "2026-07-03", row, "")
 	for _, want := range []string{"form=day", "mode=update", "date=2026-07-03", "p_state=7", "p_menstruation=yes"} {
 		if !strings.Contains(u, want) {
 			t.Errorf("edit URL %q missing %q", u, want)
 		}
 	}
-	// A day with no entry yet → create mode, no pre-fill params.
-	empty := buildEditURL("https://x/", ownerSleep, "2026-07-04", nil)
+	// A day with no entry yet → create mode, no pre-fill params, but the usual
+	// meds still ride along as def_meds.
+	empty := buildEditURL("https://x/", ownerSleep, "2026-07-04", nil, "Lamotrigine 200mg")
 	if !strings.Contains(empty, "mode=create") || strings.Contains(empty, "p_") {
 		t.Errorf("expected create mode with no p_ params, got %q", empty)
+	}
+	if !strings.Contains(empty, "def_meds=Lamotrigine") {
+		t.Errorf("expected def_meds pre-fill in create mode, got %q", empty)
+	}
+}
+
+// A normal form open carries the most-recent meds as def_meds, and omits the
+// param entirely when there are none.
+func TestBuildFormURLDefaultMeds(t *testing.T) {
+	u := buildFormURL("https://x/", ownerDay, "", nil, "Lamotrigine 200mg; Olanzapine 3mg")
+	for _, want := range []string{"form=day", "def_meds=Lamotrigine"} {
+		if !strings.Contains(u, want) {
+			t.Errorf("form URL %q missing %q", u, want)
+		}
+	}
+	if got := buildFormURL("https://x/", ownerSleep, "", nil, ""); strings.Contains(got, "def_meds") {
+		t.Errorf("expected no def_meds when empty, got %q", got)
 	}
 }
 

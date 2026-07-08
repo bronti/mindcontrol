@@ -249,24 +249,15 @@ const defaultDoses = {
 // Wire up every medications section on the page (the sleep one and the day one).
 document.querySelectorAll(".medications").forEach(setupMedications);
 
-// Pre-fill the usual medications (at their default doses): morning = Sleep form,
-// evening = Day form. Skipped when editing an existing entry (we load its meds
-// instead). Any of them can still be removed or have its dose changed.
+// Pre-fill medications from the most recent previous entry: the bot passes that
+// day's drugs and doses in ?def_meds= (as "Name 200mg; Other 3mg"). Skipped when
+// editing an existing entry — there we load that entry's own meds instead. Every
+// pre-filled drug can still be removed or have its dose changed.
 if (!editUpdate) {
-  prefillMedications(document.querySelector(".medications.part-sleep"), ["Lamotrigine"]);
-  prefillMedications(document.querySelector(".medications.part-day"), ["Lamotrigine", "Olanzapine", "Fluoxetine"]);
-}
-
-function prefillMedications(section, meds) {
-  const picker = section.querySelector(".med-picker");
-  const list = section.querySelector(".med-list");
-  meds.forEach((name) => {
-    const option = picker.querySelector(`option[value="${name}"]`);
-    if (!option) return;
-    addMedicationRow(picker, list, { name: name, label: option.textContent, dose: defaultDoses[name] || "" });
-    option.hidden = true; // already added — hide from the dropdown
-    option.disabled = true;
-  });
+  const section = document.querySelector(
+    formMode === "sleep" ? ".medications.part-sleep" : ".medications.part-day"
+  );
+  prefillMedsFromString(section, new URLSearchParams(location.search).get("def_meds"));
 }
 
 function setupMedications(section) {
