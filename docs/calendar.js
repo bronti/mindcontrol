@@ -1,7 +1,9 @@
 // Calendar view: shows which days have entries. Each day is split top/bottom —
 // top = sleep (coloured by "how rested"), bottom = day (coloured by overall
 // state). Grey halves mean that part isn't filled; a neutral colour means the
-// part was filled but that rating wasn't set.
+// part was filled but that rating wasn't set. Tapping a half opens that entry.
+(function () {
+  "use strict";
 
 const tg = window.Telegram && window.Telegram.WebApp;
 if (tg) {
@@ -131,3 +133,4 @@ document.getElementById("next").addEventListener("click", () => {
 });
 
 render();
+})();

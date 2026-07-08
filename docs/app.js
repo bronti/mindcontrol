@@ -1,5 +1,9 @@
-// All user-facing strings, grouped by language.
-// To add a language, add a new entry with the same keys.
+// The daily form: one page serving two modes (?form=sleep|day) and an edit mode
+// (?mode=…). Wrapped in an IIFE so nothing leaks to the global scope.
+(function () {
+  "use strict";
+
+// All user-facing strings, grouped by language (same keys per language).
 const translations = {
   en: {
     title: "Daily check-in",
@@ -536,3 +540,4 @@ function prefillMedsFromString(section, str) {
       }
     });
 }
+})();
