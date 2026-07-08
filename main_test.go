@@ -16,8 +16,8 @@ func TestHeaderRowMatchesColumns(t *testing.T) {
 	if len(headerRow()) != len(columns) {
 		t.Fatalf("header has %d entries but columns has %d", len(headerRow()), len(columns))
 	}
-	if len(columns) != 23 {
-		t.Fatalf("expected 23 columns, got %d", len(columns))
+	if len(columns) != 24 {
+		t.Fatalf("expected 24 columns, got %d", len(columns))
 	}
 }
 

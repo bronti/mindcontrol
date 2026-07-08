@@ -75,6 +75,7 @@
           <label><input type="radio" name="dreams" value="none" checked><span data-translate="dream_none">None</span></label>
           <label><input type="radio" name="dreams" value="dreams"><span data-translate="dream_dreams">Dreams</span></label>
           <label><input type="radio" name="dreams" value="nightmares"><span data-translate="dream_nightmares">Nightmares</span></label>
+          <label><input type="radio" name="dreams" value="anxious"><span data-translate="dream_anxious">Anxious</span></label>
         </div>
       </div>
 
@@ -82,6 +83,25 @@
         <span data-translate="q_dream_note">What was the dream about?</span>
         <textarea name="dream_note" rows="3" data-translate-placeholder="dream_note_placeholder" placeholder="what happened in the dream..."></textarea>
       </label>
+
+      <!-- ===== Medications (sleep) ===== -->
+      <section class="group part-sleep medications">
+        <h2 class="group-title" data-translate="sec_meds_sleep">Medications (sleep)</h2>
+        <p class="hint" data-translate="meds_hint">Pick what you took; the dose in mg is pre-filled and editable.</p>
+
+        <select class="med-picker">
+          <option value="" data-translate="med_add" selected>+ Add a medication…</option>
+          <option value="Lamotrigine" data-translate="med_lamotrigine">Lamotrigine</option>
+          <option value="Olanzapine" data-translate="med_olanzapine">Olanzapine</option>
+          <option value="Fluoxetine" data-translate="med_fluoxetine">Fluoxetine</option>
+          <option value="Trittico" data-translate="med_trittico">Trittico</option>
+          <option value="Grandaxin" data-translate="med_grandaxin">Grandaxin</option>
+          <option value="Ibuprofen" data-translate="med_ibuprofen">Ibuprofen</option>
+          <option value="__other__" data-translate="med_other">Other…</option>
+        </select>
+
+        <div class="med-list"></div>
+      </section>
 
       <!-- ===== Scales 1–5 ===== -->
       <section class="group part-day">
@@ -158,13 +178,13 @@
         </div>
       </section>
 
-      <!-- ===== Medications ===== -->
-      <section class="group part-day">
+      <!-- ===== Medications (day) ===== -->
+      <section class="group part-day medications">
         <h2 class="group-title" data-translate="sec_meds">Medications</h2>
         <p class="hint" data-translate="meds_hint">Pick what you took; the dose in mg is pre-filled and editable.</p>
 
         <!-- Pick a drug from the list; it gets added as a row below (scales to a long list). -->
-        <select id="medPicker" class="med-picker">
+        <select class="med-picker">
           <option value="" data-translate="med_add" selected>+ Add a medication…</option>
           <option value="Lamotrigine" data-translate="med_lamotrigine">Lamotrigine</option>
           <option value="Olanzapine" data-translate="med_olanzapine">Olanzapine</option>
@@ -176,7 +196,7 @@
         </select>
 
         <!-- Added medications appear here, each with an editable mg field and a remove button. -->
-        <div id="medList"></div>
+        <div class="med-list"></div>
       </section>
 
       <!-- ===== Diary ===== -->

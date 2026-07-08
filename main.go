@@ -25,30 +25,31 @@ type medication struct {
 // (see docs/app.js). The json tags must match the keys used there.
 // SleepHours is a pointer so a missing time (null) stays distinct from 0.
 type formAnswers struct {
-	FormType     string       `json:"form_type"` // "sleep" or "day" — which half of the day this is
-	Date         string       `json:"date"`      // the day being filled in (chosen in the form)
-	FilledAt     string       `json:"-"`         // when the form was submitted; set by the bot
-	Bedtime      string       `json:"bedtime"`
-	Wake         string       `json:"wake"`
-	SleepHours   *float64     `json:"sleep_hours"`
-	SleepQuality int          `json:"sleep_quality"`
-	Dreams       string       `json:"dreams"`
-	DreamNote    string       `json:"dream_note"`
-	State        int          `json:"state"`
-	Anxiety      int          `json:"anxiety"`
-	Irritability int          `json:"irritability"`
-	Libido       int          `json:"libido"`
-	Drowsiness   int          `json:"drowsiness"`
-	Appetite     int          `json:"appetite"`
-	Energy       int          `json:"energy"`
-	AteWell      int          `json:"ate_well"`
-	Menstruation bool         `json:"menstruation"`
-	Sex          bool         `json:"sex"`
-	Masturbation bool         `json:"masturbation"`
-	Headache     bool         `json:"headache"`
-	Smoking      bool         `json:"smoking"`
-	Medications  []medication `json:"medications"`
-	Note         string       `json:"note"`
+	FormType         string       `json:"form_type"` // "sleep" or "day" — which half of the day this is
+	Date             string       `json:"date"`      // the day being filled in (chosen in the form)
+	FilledAt         string       `json:"-"`         // when the form was submitted; set by the bot
+	Bedtime          string       `json:"bedtime"`
+	Wake             string       `json:"wake"`
+	SleepHours       *float64     `json:"sleep_hours"`
+	SleepQuality     int          `json:"sleep_quality"`
+	Dreams           string       `json:"dreams"`
+	DreamNote        string       `json:"dream_note"`
+	SleepMedications []medication `json:"sleep_medications"`
+	State            int          `json:"state"`
+	Anxiety          int          `json:"anxiety"`
+	Irritability     int          `json:"irritability"`
+	Libido           int          `json:"libido"`
+	Drowsiness       int          `json:"drowsiness"`
+	Appetite         int          `json:"appetite"`
+	Energy           int          `json:"energy"`
+	AteWell          int          `json:"ate_well"`
+	Menstruation     bool         `json:"menstruation"`
+	Sex              bool         `json:"sex"`
+	Masturbation     bool         `json:"masturbation"`
+	Headache         bool         `json:"headache"`
+	Smoking          bool         `json:"smoking"`
+	Medications      []medication `json:"medications"`
+	Note             string       `json:"note"`
 }
 
 // Column ownership: which form fills a column. "meta" columns (date, filled-at)
@@ -75,6 +76,7 @@ var columns = []struct {
 	{"Sleep quality", ownerSleep, func(a formAnswers) interface{} { return a.SleepQuality }},
 	{"Dreams", ownerSleep, func(a formAnswers) interface{} { return a.Dreams }},
 	{"Dream notes", ownerSleep, func(a formAnswers) interface{} { return dreamNote(a) }},
+	{"Sleep medications", ownerSleep, func(a formAnswers) interface{} { return formatMedications(a.SleepMedications) }},
 	{"Overall state", ownerDay, func(a formAnswers) interface{} { return a.State }},
 	{"Anxiety", ownerDay, func(a formAnswers) interface{} { return a.Anxiety }},
 	{"Irritability", ownerDay, func(a formAnswers) interface{} { return a.Irritability }},
@@ -97,7 +99,7 @@ var columns = []struct {
 // nightmares — so text typed and then dismissed (dreams set back to "none")
 // is never saved.
 func dreamNote(a formAnswers) string {
-	if a.Dreams == "dreams" || a.Dreams == "nightmares" {
+	if a.Dreams == "dreams" || a.Dreams == "nightmares" || a.Dreams == "anxious" {
 		return a.DreamNote
 	}
 	return ""

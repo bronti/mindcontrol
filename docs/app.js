@@ -19,7 +19,7 @@ const translations = {
 
     q_sleep_quality: "Sleep quality",
     q_dreams: "Dreams?",
-    dream_none: "None", dream_dreams: "Dreams", dream_nightmares: "Nightmares",
+    dream_none: "None", dream_dreams: "Dreams", dream_nightmares: "Nightmares", dream_anxious: "Anxious",
     q_dream_note: "What was the dream about?",
     dream_note_placeholder: "what happened in the dream...",
 
@@ -42,6 +42,7 @@ const translations = {
     yes: "Yes", no: "No",
 
     sec_meds: "Medications",
+    sec_meds_sleep: "Medications (sleep)",
     meds_hint: "Pick what you took; the dose in mg is pre-filled and editable.",
     med_add: "+ Add a medication…",
     med_lamotrigine: "Lamotrigine",
@@ -77,7 +78,7 @@ const translations = {
 
     q_sleep_quality: "Качество сна",
     q_dreams: "Сны?",
-    dream_none: "Нет", dream_dreams: "Сны", dream_nightmares: "Кошмары",
+    dream_none: "Нет", dream_dreams: "Сны", dream_nightmares: "Кошмары", dream_anxious: "Тревожные",
     q_dream_note: "О чём был сон?",
     dream_note_placeholder: "что происходило во сне...",
 
@@ -100,6 +101,7 @@ const translations = {
     yes: "Да", no: "Нет",
 
     sec_meds: "Лекарства",
+    sec_meds_sleep: "Лекарства (сон)",
     meds_hint: "Выбери принятое; доза в мг подставится сама, её можно поправить.",
     med_add: "+ Добавить лекарство…",
     med_lamotrigine: "Ламотриджин",
@@ -202,49 +204,50 @@ form.querySelectorAll('input[type="range"]').forEach((range) => {
   sync();
 });
 
-// ---- Dream note: show the text field only for "dreams"/"nightmares" ----
-// The textarea keeps its text when hidden, so switching none/dreams/nightmares
-// never loses what was typed. Whether it's actually saved is decided at submit.
+// ---- Dream note: show the text field only when there were some kind of dreams ----
+// The textarea keeps its text when hidden, so switching between the options never
+// loses what was typed. Whether it's actually saved is decided at submit.
+const dreamsWithContent = ["dreams", "nightmares", "anxious"];
 const dreamNoteField = document.getElementById("dreamNoteField");
 function updateDreamNote() {
-  const v = form.dreams.value;
-  dreamNoteField.hidden = !(v === "dreams" || v === "nightmares");
+  dreamNoteField.hidden = !dreamsWithContent.includes(form.dreams.value);
 }
 form.querySelectorAll('input[name="dreams"]').forEach((radio) => {
   radio.addEventListener("change", updateDreamNote);
 });
 updateDreamNote();
 
-// ---- Medications: add from a dropdown, each with a pre-filled, editable dose ----
+// ---- Medications: each section (sleep + day) is an independent add-from-dropdown ----
 // Default dose in mg per drug (leave a drug out for a blank default).
 const defaultDoses = {
-  Lamotrigine: "400",
+  Lamotrigine: "200",
   Fluoxetine: "25",
   Olanzapine: "3",
 };
 
-const medPicker = document.getElementById("medPicker");
-const medList = document.getElementById("medList");
+// Wire up every medications section on the page (the sleep one and the day one).
+document.querySelectorAll(".medications").forEach(setupMedications);
 
-medPicker.addEventListener("change", () => {
-  const value = medPicker.value;
-  if (!value) return;
+function setupMedications(section) {
+  const picker = section.querySelector(".med-picker");
+  const list = section.querySelector(".med-list");
+  picker.addEventListener("change", () => {
+    const value = picker.value;
+    if (!value) return;
+    if (value === "__other__") {
+      addMedicationRow(picker, list, { custom: true }); // free-text medication
+    } else {
+      const option = picker.querySelector(`option[value="${value}"]`);
+      addMedicationRow(picker, list, { name: value, label: option.textContent, dose: defaultDoses[value] || "" });
+      option.hidden = true; // can't add the same drug twice
+      option.disabled = true;
+    }
+    picker.value = ""; // back to the "+ Add…" placeholder
+  });
+}
 
-  if (value === "__other__") {
-    // Free-text medication: a row with an editable name field.
-    addMedicationRow({ custom: true });
-  } else {
-    const option = medPicker.querySelector(`option[value="${value}"]`);
-    addMedicationRow({ name: value, label: option.textContent, dose: defaultDoses[value] || "" });
-    // Hide the chosen drug from the list so it can't be added twice.
-    option.hidden = true;
-    option.disabled = true;
-  }
-  medPicker.value = ""; // back to the "+ Add…" placeholder
-});
-
-// Build one medication row: name (fixed or editable for custom), mg field, remove button.
-function addMedicationRow({ name = "", label = "", dose = "", custom = false }) {
+// Build one medication row inside `list`; `picker` is its own dropdown (to restore on remove).
+function addMedicationRow(picker, list, { name = "", label = "", dose = "", custom = false }) {
   const row = document.createElement("div");
   row.className = "med";
   row.dataset.name = name;
@@ -282,16 +285,16 @@ function addMedicationRow({ name = "", label = "", dose = "", custom = false }) 
   remove.setAttribute("aria-label", "remove");
   remove.addEventListener("click", () => {
     row.remove();
-    // Put a fixed drug back into the dropdown (custom rows have nothing to restore).
+    // Put a fixed drug back into its dropdown (custom rows have nothing to restore).
     if (!custom) {
-      const option = medPicker.querySelector(`option[value="${name}"]`);
+      const option = picker.querySelector(`option[value="${name}"]`);
       option.hidden = false;
       option.disabled = false;
     }
   });
 
   row.append(nameEl, doseWrap, remove);
-  medList.append(row);
+  list.append(row);
   if (custom) nameEl.focus(); // let the user type the name right away
 }
 
@@ -350,9 +353,9 @@ wake.addEventListener("input", updateSleep);
 updateSleep();
 
 // ---- Collect every medication row the user added, with its dose ----
-function collectMedications() {
+function collectMedications(list) {
   const meds = [];
-  medList.querySelectorAll(".med").forEach((row) => {
+  list.querySelectorAll(".med").forEach((row) => {
     const nameInput = row.querySelector(".med-name-input");
     const name = nameInput ? nameInput.value.trim() : row.dataset.name;
     if (!name) return; // skip a custom row left without a name
@@ -361,6 +364,10 @@ function collectMedications() {
   });
   return meds;
 }
+
+// The two medication lists (sleep form and day form).
+const sleepMedList = document.querySelector(".medications.part-sleep .med-list");
+const dayMedList = document.querySelector(".medications.part-day .med-list");
 
 // ---- Submit: gather everything and hand it to the bot ----
 form.addEventListener("submit", (event) => {
@@ -378,12 +385,10 @@ form.addEventListener("submit", (event) => {
     sleep_hours: minutes === null ? null : Math.round((minutes / 60) * 100) / 100,
     sleep_quality: Number(form.sleep_quality.value),
     dreams: form.dreams.value,
-    // Only send the dream text when there actually were dreams/nightmares — if the
-    // user typed something then switched back to "none", it must not be saved.
-    dream_note:
-      form.dreams.value === "dreams" || form.dreams.value === "nightmares"
-        ? form.dream_note.value
-        : "",
+    // Only send the dream text when there were some kind of dreams — if the user
+    // typed something then switched back to "none", it must not be saved.
+    dream_note: dreamsWithContent.includes(form.dreams.value) ? form.dream_note.value : "",
+    sleep_medications: collectMedications(sleepMedList),
     state: Number(form.state.value),
     anxiety: Number(form.anxiety.value),
     irritability: Number(form.irritability.value),
@@ -397,7 +402,7 @@ form.addEventListener("submit", (event) => {
     masturbation: form.masturbation.value === "yes",
     headache: form.headache.value === "yes",
     smoking: form.smoking.value === "yes",
-    medications: collectMedications(),
+    medications: collectMedications(dayMedList),
     note: form.note.value,
   };
 
