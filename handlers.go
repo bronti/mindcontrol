@@ -197,18 +197,17 @@ func (s *server) rememberChat(chatID int64) {
 // formKeyboard offers the two entry forms and the calendar. Only a reply-keyboard
 // button can send answers back to the bot via tg.sendData → WebAppData.
 func (s *server) formKeyboard() tgbotapi.ReplyKeyboardMarkup {
-	sleepFilled, dayFilled, err := filledByPart()
+	// One read serves the whole keyboard; on error rows is nil and the helpers
+	// degrade gracefully (no filled/pre-fill info, buttons still work).
+	rows, err := readDataRows()
 	if err != nil {
-		log.Printf("could not read filled dates: %v", err)
+		log.Printf("could not read sheet data for the keyboard: %v", err)
 	}
-	days, err := calendarData()
-	if err != nil {
-		log.Printf("could not read calendar data: %v", err)
-	}
+	sleepDates, dayDates := filledByPartRows(rows)
 	today := time.Now().Format(isoDate)
-	sleepBtn := s.webAppButton("open_sleep", buildFormURL(s.webAppURL, ownerSleep, "", sleepFilled, latestMedsOrLog(ownerSleep, today)))
-	dayBtn := s.webAppButton("open_day", buildFormURL(s.webAppURL, ownerDay, "", dayFilled, latestMedsOrLog(ownerDay, today)))
-	calBtn := s.webAppButton("open_calendar", calendarURL(s.webAppURL, days))
+	sleepBtn := s.webAppButton("open_sleep", buildFormURL(s.webAppURL, ownerSleep, "", sleepDates, latestMedicationsRows(rows, ownerSleep, today)))
+	dayBtn := s.webAppButton("open_day", buildFormURL(s.webAppURL, ownerDay, "", dayDates, latestMedicationsRows(rows, ownerDay, today)))
+	calBtn := s.webAppButton("open_calendar", calendarURL(s.webAppURL, calendarDataRows(rows)))
 	return tgbotapi.NewReplyKeyboard(
 		tgbotapi.NewKeyboardButtonRow(sleepBtn, dayBtn),
 		tgbotapi.NewKeyboardButtonRow(calBtn),
@@ -218,15 +217,16 @@ func (s *server) formKeyboard() tgbotapi.ReplyKeyboardMarkup {
 // dayKeyboard is just the Day-form button, optionally pre-set to a date (used by
 // the catch-up reminder).
 func (s *server) dayKeyboard(targetDate string) tgbotapi.ReplyKeyboardMarkup {
-	_, dayFilled, err := filledByPart()
+	rows, err := readDataRows()
 	if err != nil {
-		log.Printf("could not read filled dates: %v", err)
+		log.Printf("could not read sheet data for the keyboard: %v", err)
 	}
+	_, dayDates := filledByPartRows(rows)
 	before := targetDate
 	if before == "" {
 		before = time.Now().Format(isoDate)
 	}
-	btn := s.webAppButton("open_day", buildFormURL(s.webAppURL, ownerDay, targetDate, dayFilled, latestMedsOrLog(ownerDay, before)))
+	btn := s.webAppButton("open_day", buildFormURL(s.webAppURL, ownerDay, targetDate, dayDates, latestMedicationsRows(rows, ownerDay, before)))
 	return tgbotapi.NewReplyKeyboard(tgbotapi.NewKeyboardButtonRow(btn))
 }
 

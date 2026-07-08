@@ -41,6 +41,54 @@ func TestBuildFormURLDefaultMeds(t *testing.T) {
 	}
 }
 
+// The row-set helpers that back the keyboard now run on plain data, so we can
+// test their logic without touching the live sheet.
+
+func TestFilledByPartRows(t *testing.T) {
+	rows := [][]interface{}{
+		mergeRow(nil, formAnswers{Date: "2026-07-01", Bedtime: "23:00"}, ownerSleep), // sleep only
+		mergeRow(nil, formAnswers{Date: "2026-07-02", State: ptr(5)}, ownerDay),      // day only
+	}
+	sleep, day := filledByPartRows(rows)
+	if len(sleep) != 1 || sleep[0] != "2026-07-01" {
+		t.Errorf("sleep dates: got %v, want [2026-07-01]", sleep)
+	}
+	if len(day) != 1 || day[0] != "2026-07-02" {
+		t.Errorf("day dates: got %v, want [2026-07-02]", day)
+	}
+}
+
+func TestCalendarDataRows(t *testing.T) {
+	rows := [][]interface{}{
+		mergeRow(nil, formAnswers{Date: "2026-07-02", State: ptr(7)}, ownerDay),
+		mergeRow(nil, formAnswers{Date: "2026-07-01", Rested: ptr(3)}, ownerSleep),
+	}
+	// Sorted chronologically; sleep=top (rating), day=bottom, "-" for the missing half.
+	if got, want := calendarDataRows(rows), "20260701.3.-_20260702.-.7"; got != want {
+		t.Errorf("calendar data: got %q, want %q", got, want)
+	}
+}
+
+func TestLatestMedicationsRows(t *testing.T) {
+	med := func(name, dose string) []medication { return []medication{{Name: name, Dose: dose}} }
+	rows := [][]interface{}{
+		mergeRow(nil, formAnswers{Date: "2026-07-01", Medications: med("Lamotrigine", "200")}, ownerDay),
+		mergeRow(nil, formAnswers{Date: "2026-07-05", Medications: med("Olanzapine", "5")}, ownerDay),
+		mergeRow(nil, formAnswers{Date: "2026-07-03", Medications: med("Fluoxetine", "25")}, ownerDay),
+	}
+	if got := latestMedicationsRows(rows, ownerDay, "2026-07-10"); got != "Olanzapine 5mg" {
+		t.Errorf("latest before 07-10: got %q, want Olanzapine 5mg", got)
+	}
+	// 07-05 is excluded (>= before), so the newest remaining is 07-03.
+	if got := latestMedicationsRows(rows, ownerDay, "2026-07-04"); got != "Fluoxetine 25mg" {
+		t.Errorf("latest before 07-04: got %q, want Fluoxetine 25mg", got)
+	}
+	// These rows have no sleep medications.
+	if got := latestMedicationsRows(rows, ownerSleep, "2026-07-10"); got != "" {
+		t.Errorf("latest sleep meds: got %q, want empty", got)
+	}
+}
+
 // colIndex finds a column by its header (so tests don't break on a reorder).
 func colIndex(header string) int {
 	for i, c := range columns {
