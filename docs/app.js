@@ -154,12 +154,15 @@ function applyTranslations() {
 }
 applyTranslations();
 
+// Everything the bot passed in the page URL — the form mode, filled dates and
+// pre-fill values. Parsed once; the whole script reads from here.
+const pageParams = new URLSearchParams(location.search);
+
 // This page is one of two forms, chosen by ?form=sleep|day (default: day).
 // We hide the other form's fields and only send this part on submit.
-const formMode = new URLSearchParams(location.search).get("form") === "sleep" ? "sleep" : "day";
-const editParams = new URLSearchParams(location.search);
-const editMode = editParams.has("mode"); // opened from the calendar to view/edit a day
-const editUpdate = editParams.get("mode") === "update"; // an existing entry (vs a new one)
+const formMode = pageParams.get("form") === "sleep" ? "sleep" : "day";
+const editMode = pageParams.has("mode"); // opened from the calendar to view/edit a day
+const editUpdate = pageParams.get("mode") === "update"; // an existing entry (vs a new one)
 document.querySelector("h1").textContent = dict[formMode === "sleep" ? "title_sleep" : "title_day"];
 document.querySelector(".subtitle").textContent = dict[formMode === "sleep" ? "subtitle_sleep" : "subtitle_day"];
 document.querySelectorAll(formMode === "sleep" ? ".part-day" : ".part-sleep").forEach((el) => {
@@ -182,7 +185,7 @@ function isoDate(d) {
 }
 const today = isoDate(new Date());
 // A reminder may open the form pre-set to a specific day via ?date=YYYY-MM-DD.
-const requestedDate = new URLSearchParams(location.search).get("date");
+const requestedDate = pageParams.get("date");
 const startDate =
   requestedDate && /^\d{4}-\d{2}-\d{2}$/.test(requestedDate) && requestedDate <= today
     ? requestedDate
@@ -192,7 +195,7 @@ dateInput.max = today; // no filling in the future
 
 // Dates already saved — the bot passes them in the form URL as ?filled=a,b,c
 const filledDates = new Set(
-  (new URLSearchParams(location.search).get("filled") || "")
+  (pageParams.get("filled") || "")
     .split(",")
     .map((s) => s.trim())
     .filter(Boolean)
@@ -257,7 +260,7 @@ if (!editUpdate) {
   const section = document.querySelector(
     formMode === "sleep" ? ".medications.part-sleep" : ".medications.part-day"
   );
-  prefillMedsFromString(section, new URLSearchParams(location.search).get("def_meds"));
+  prefillMedsFromString(section, pageParams.get("def_meds"));
 }
 
 function setupMedications(section) {
@@ -271,11 +274,18 @@ function setupMedications(section) {
     } else {
       const option = picker.querySelector(`option[value="${value}"]`);
       addMedicationRow(picker, list, { name: value, label: option.textContent, dose: defaultDoses[value] || "" });
-      option.hidden = true; // can't add the same drug twice
-      option.disabled = true;
+      setOptionTaken(picker, value, true); // can't add the same drug twice
     }
     picker.value = ""; // back to the "+ Add…" placeholder
   });
+}
+
+// An added drug leaves its dropdown; removing its row puts it back.
+function setOptionTaken(picker, name, taken) {
+  const option = picker.querySelector(`option[value="${name}"]`);
+  if (!option) return; // custom drugs have no dropdown entry
+  option.hidden = taken;
+  option.disabled = taken;
 }
 
 // Build one medication row inside `list`; `picker` is its own dropdown (to restore on remove).
@@ -319,11 +329,7 @@ function addMedicationRow(picker, list, { name = "", label = "", dose = "", cust
   remove.addEventListener("click", () => {
     row.remove();
     // Put a fixed drug back into its dropdown (custom rows have nothing to restore).
-    if (!custom) {
-      const option = picker.querySelector(`option[value="${name}"]`);
-      option.hidden = false;
-      option.disabled = false;
-    }
+    if (!custom) setOptionTaken(picker, name, false);
   });
 
   row.append(nameEl, doseWrap, remove);
@@ -393,7 +399,7 @@ function collectMedications(list) {
     const name = nameInput ? nameInput.value.trim() : row.dataset.name;
     if (!name) return; // skip a custom row left without a name
     const dose = row.querySelector('input[type="number"]').value;
-    meds.push({ name: name, dose: dose });
+    meds.push({ name, dose });
   });
   return meds;
 }
@@ -453,7 +459,7 @@ form.addEventListener("submit", (event) => {
 if (editMode) applyEditMode();
 
 function applyEditMode() {
-  const p = new URLSearchParams(location.search);
+  const p = pageParams;
 
   // The date is fixed to the day being edited.
   dateInput.value = p.get("date") || dateInput.value;
@@ -523,11 +529,10 @@ function prefillMedsFromString(section, str) {
       const dose = m ? m[2] : "";
       const option = picker.querySelector(`option[value="${name}"]`);
       if (option) {
-        addMedicationRow(picker, list, { name: name, label: option.textContent, dose: dose });
-        option.hidden = true;
-        option.disabled = true;
+        addMedicationRow(picker, list, { name, label: option.textContent, dose });
+        setOptionTaken(picker, name, true);
       } else {
-        addMedicationRow(picker, list, { custom: true, name: name, dose: dose });
+        addMedicationRow(picker, list, { custom: true, name, dose });
       }
     });
 }

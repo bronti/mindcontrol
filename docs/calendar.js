@@ -17,7 +17,7 @@ const ru =
 // Tapping a day's half asks the bot to open that entry (it replies with a
 // pre-filled edit button). Closes the calendar.
 function sendEdit(date, part) {
-  if (tg) tg.sendData(JSON.stringify({ t: "edit", date: date, part: part }));
+  if (tg) tg.sendData(JSON.stringify({ t: "edit", date, part }));
 }
 
 const text = {
@@ -38,7 +38,7 @@ const data = {};
     const [d, top, bottom] = entry.split(".");
     if (!d || d.length !== 8) return;
     const iso = `${d.slice(0, 4)}-${d.slice(4, 6)}-${d.slice(6, 8)}`;
-    data[iso] = { top: top, bottom: bottom };
+    data[iso] = { top, bottom };
   });
 
 // ---- Colour for one half: grey if not filled, neutral if filled-but-unrated,
