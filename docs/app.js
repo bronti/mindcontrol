@@ -242,12 +242,18 @@ form.querySelectorAll('input[name="dreams"]').forEach((radio) => {
 updateDreamNote();
 
 // ---- Medications: each section (sleep + day) is an independent add-from-dropdown ----
-// Default dose in mg per drug (leave a drug out for a blank default).
-const defaultDoses = {
-  Lamotrigine: "200",
-  Fluoxetine: "25",
-  Olanzapine: "3",
-};
+// The one list of known drugs: the canonical name (what's saved to the sheet; its
+// translation key is "med_" + the name lowercased) and the usual dose in mg,
+// pre-filled when the drug is added ("" = blank). Both pickers are built from it —
+// to offer a new drug, add it here (and its med_* label to the translations).
+const medicationCatalog = [
+  { name: "Lamotrigine", dose: "200" },
+  { name: "Olanzapine", dose: "3" },
+  { name: "Fluoxetine", dose: "25" },
+  { name: "Trittico", dose: "" },
+  { name: "Grandaxin", dose: "" },
+  { name: "Ibuprofen", dose: "" },
+];
 
 // Wire up every medications section on the page (the sleep one and the day one).
 document.querySelectorAll(".medications").forEach(setupMedications);
@@ -266,18 +272,34 @@ if (!editUpdate) {
 function setupMedications(section) {
   const picker = section.querySelector(".med-picker");
   const list = section.querySelector(".med-list");
+  populatePicker(picker);
   picker.addEventListener("change", () => {
     const value = picker.value;
     if (!value) return;
     if (value === "__other__") {
       addMedicationRow(picker, list, { custom: true }); // free-text medication
     } else {
+      const med = medicationCatalog.find((m) => m.name === value);
       const option = picker.querySelector(`option[value="${value}"]`);
-      addMedicationRow(picker, list, { name: value, label: option.textContent, dose: defaultDoses[value] || "" });
+      addMedicationRow(picker, list, { name: value, label: option.textContent, dose: med.dose });
       setOptionTaken(picker, value, true); // can't add the same drug twice
     }
     picker.value = ""; // back to the "+ Add…" placeholder
   });
+}
+
+// Fill a picker with the catalog drugs (translated labels) plus "Other…".
+function populatePicker(picker) {
+  medicationCatalog.forEach(({ name }) => {
+    const option = document.createElement("option");
+    option.value = name;
+    option.textContent = dict["med_" + name.toLowerCase()] || name;
+    picker.append(option);
+  });
+  const other = document.createElement("option");
+  other.value = "__other__";
+  other.textContent = dict.med_other;
+  picker.append(other);
 }
 
 // An added drug leaves its dropdown; removing its row puts it back.

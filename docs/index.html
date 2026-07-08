@@ -89,23 +89,17 @@
         <h2 class="group-title" data-translate="sec_meds_sleep">Medications (sleep)</h2>
         <p class="hint" data-translate="meds_hint">Pick what you took; the dose in mg is pre-filled and editable.</p>
 
+        <!-- The drug options come from medicationCatalog in app.js — one list feeds both pickers. -->
         <select class="med-picker">
           <option value="" data-translate="med_add" selected>+ Add a medication…</option>
-          <option value="Lamotrigine" data-translate="med_lamotrigine">Lamotrigine</option>
-          <option value="Olanzapine" data-translate="med_olanzapine">Olanzapine</option>
-          <option value="Fluoxetine" data-translate="med_fluoxetine">Fluoxetine</option>
-          <option value="Trittico" data-translate="med_trittico">Trittico</option>
-          <option value="Grandaxin" data-translate="med_grandaxin">Grandaxin</option>
-          <option value="Ibuprofen" data-translate="med_ibuprofen">Ibuprofen</option>
-          <option value="__other__" data-translate="med_other">Other…</option>
         </select>
 
         <div class="med-list"></div>
       </section>
 
-      <!-- ===== Scales 1–5 ===== -->
+      <!-- ===== Scales 0–4 ===== -->
       <section class="group part-day">
-        <h2 class="group-title" data-translate="sec_scales">How you felt (1–5)</h2>
+        <h2 class="group-title" data-translate="sec_scales">How you felt (0–4)</h2>
 
         <label class="field slider">
           <span class="slider-head"><span data-translate="q_anxiety">Anxiety</span><output>—</output></span>
@@ -183,16 +177,10 @@
         <h2 class="group-title" data-translate="sec_meds">Medications</h2>
         <p class="hint" data-translate="meds_hint">Pick what you took; the dose in mg is pre-filled and editable.</p>
 
-        <!-- Pick a drug from the list; it gets added as a row below (scales to a long list). -->
+        <!-- Pick a drug from the list; it gets added as a row below (scales to a long list).
+             The drug options come from medicationCatalog in app.js — one list feeds both pickers. -->
         <select class="med-picker">
           <option value="" data-translate="med_add" selected>+ Add a medication…</option>
-          <option value="Lamotrigine" data-translate="med_lamotrigine">Lamotrigine</option>
-          <option value="Olanzapine" data-translate="med_olanzapine">Olanzapine</option>
-          <option value="Fluoxetine" data-translate="med_fluoxetine">Fluoxetine</option>
-          <option value="Trittico" data-translate="med_trittico">Trittico</option>
-          <option value="Grandaxin" data-translate="med_grandaxin">Grandaxin</option>
-          <option value="Ibuprofen" data-translate="med_ibuprofen">Ibuprofen</option>
-          <option value="__other__" data-translate="med_other">Other…</option>
         </select>
 
         <!-- Added medications appear here, each with an editable mg field and a remove button. -->
