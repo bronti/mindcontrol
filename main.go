@@ -7,6 +7,7 @@ import (
 	"net/url"
 	"os"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 
@@ -210,9 +211,6 @@ func main() {
 		log.Print("WEB_APP_URL is not set — the 'Open form' button will be hidden (see .env.example)")
 	}
 
-	// A per-startup version added to the form URL to bust the Mini App cache.
-	formVersion = fmt.Sprint(time.Now().Unix())
-
 	bot, err := tgbotapi.NewBotAPI(token)
 	if err != nil {
 		log.Fatalf("could not connect to the bot (check the token): %v", err)
@@ -289,10 +287,13 @@ func main() {
 	}
 }
 
-// formVersion is set once at startup and added to the form URL as ?v=... It
-// busts the Telegram Mini App's asset cache: restart the bot after changing the
-// form and the new version forces the page (and app.js/style.css) to reload.
-var formVersion string
+// cacheVersion is added to every form URL as ?v=... to bust the Telegram Mini
+// App's asset cache. It's the current time, so each time a form is opened the
+// page (and app.js/style.css) is fetched fresh — a deployed form change shows up
+// without restarting the bot.
+func cacheVersion() string {
+	return strconv.FormatInt(time.Now().Unix(), 10)
+}
 
 // formKeyboard builds a reply keyboard with two buttons — one opens the Sleep
 // form, one opens the Day form. Only a reply-keyboard button can send answers
@@ -330,9 +331,7 @@ func calendarURL(baseURL string) string {
 	}
 	u.Path += "calendar.html"
 	q := u.Query()
-	if formVersion != "" {
-		q.Set("v", formVersion)
-	}
+	q.Set("v", cacheVersion())
 	if data != "" {
 		q.Set("days", data)
 	}
@@ -362,9 +361,7 @@ func buildFormURL(baseURL, part, targetDate string, filled []string) string {
 		return baseURL
 	}
 	q := u.Query()
-	if formVersion != "" {
-		q.Set("v", formVersion)
-	}
+	q.Set("v", cacheVersion())
 	q.Set("form", part)
 	if targetDate != "" {
 		q.Set("date", targetDate)
@@ -462,9 +459,7 @@ func buildEditURL(baseURL, part, date string, row []interface{}) string {
 		return baseURL
 	}
 	q := u.Query()
-	if formVersion != "" {
-		q.Set("v", formVersion)
-	}
+	q.Set("v", cacheVersion())
 	q.Set("form", part)
 	q.Set("date", date)
 	if row != nil && partFilled(row, part) {
