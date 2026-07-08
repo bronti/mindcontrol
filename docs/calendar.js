@@ -92,7 +92,7 @@ function render() {
     bottom.className = "cal-half cal-bot";
     if (rec) {
       top.style.background = halfColor(rec.top, 4);
-      bottom.style.background = halfColor(rec.bottom, 9);
+      bottom.style.background = halfColor(rec.bottom, 10);
     }
 
     const num = document.createElement("span");

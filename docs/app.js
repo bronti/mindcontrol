@@ -238,6 +238,23 @@ const defaultDoses = {
 // Wire up every medications section on the page (the sleep one and the day one).
 document.querySelectorAll(".medications").forEach(setupMedications);
 
+// Pre-fill the usual medications (at their default doses): morning = Sleep form,
+// evening = Day form. Any of them can still be removed or have its dose changed.
+prefillMedications(document.querySelector(".medications.part-sleep"), ["Lamotrigine"]);
+prefillMedications(document.querySelector(".medications.part-day"), ["Lamotrigine", "Olanzapine", "Fluoxetine"]);
+
+function prefillMedications(section, meds) {
+  const picker = section.querySelector(".med-picker");
+  const list = section.querySelector(".med-list");
+  meds.forEach((name) => {
+    const option = picker.querySelector(`option[value="${name}"]`);
+    if (!option) return;
+    addMedicationRow(picker, list, { name: name, label: option.textContent, dose: defaultDoses[name] || "" });
+    option.hidden = true; // already added — hide from the dropdown
+    option.disabled = true;
+  });
+}
+
 function setupMedications(section) {
   const picker = section.querySelector(".med-picker");
   const list = section.querySelector(".med-list");
