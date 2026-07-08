@@ -15,24 +15,25 @@ import (
 func (s *server) authorized(message *tgbotapi.Message) bool {
 	from := message.From
 
+	// A real user in a private chat always has a sender; a nil From (channel post,
+	// anonymous admin) is never the owner — reject it and avoid a nil dereference
+	// in the logging downstream.
+	if from == nil {
+		return false
+	}
+
 	if s.ownerID == 0 {
-		if from != nil {
-			log.Printf("OWNER_ID not set — the bot is OPEN. Message from @%s (id %d). "+
-				"Set OWNER_ID=%d in .env and restart to lock the bot to yourself.",
-				from.UserName, from.ID, from.ID)
-		}
+		log.Printf("OWNER_ID not set — the bot is OPEN. Message from @%s (id %d). "+
+			"Set OWNER_ID=%d in .env and restart to lock the bot to yourself.",
+			from.UserName, from.ID, from.ID)
 		return true
 	}
 
-	if from != nil && from.ID == s.ownerID {
+	if from.ID == s.ownerID {
 		return true
 	}
 
-	name, id := "", int64(0)
-	if from != nil {
-		name, id = from.UserName, from.ID
-	}
-	log.Printf("blocked message from @%s (id %d)", name, id)
+	log.Printf("blocked message from @%s (id %d)", from.UserName, from.ID)
 	s.reply(message.Chat.ID, translate("not_authorized"))
 	return false
 }
