@@ -36,50 +36,45 @@ func runReminders(bot *tgbotapi.BotAPI, webAppURL string) {
 	}
 }
 
-// sendEveningReminder nudges the user to fill today — unless today is already done.
+// sendEveningReminder nudges the user to fill today's Day form — unless it's done.
 func sendEveningReminder(bot *tgbotapi.BotAPI, webAppURL string, chatID int64, today string) {
-	if dateFilled(today) {
-		return // already filled today — no nagging
+	if dayFilled(today) {
+		return // today's day part is already filled — no nagging
 	}
 	sendReminder(bot, webAppURL, chatID, translate("remind_evening"), today)
 }
 
-// sendAfternoonReminder is the next-day catch-up: it only fires if yesterday has
-// no entry, and opens the form pre-set to yesterday for a quick backfill.
+// sendAfternoonReminder is the next-day catch-up: it only fires if yesterday's Day
+// form is missing, and opens it pre-set to yesterday for a quick backfill.
 func sendAfternoonReminder(bot *tgbotapi.BotAPI, webAppURL string, chatID int64, now time.Time) {
 	yesterday := now.AddDate(0, 0, -1).Format("2006-01-02")
-	if dateFilled(yesterday) {
-		return // yesterday is filled — nothing to catch up on
+	if dayFilled(yesterday) {
+		return // yesterday's day part is filled — nothing to catch up on
 	}
 	sendReminder(bot, webAppURL, chatID, fmt.Sprintf(translate("remind_afternoon"), yesterday), yesterday)
 }
 
-// sendReminder sends a reminder message with the "Open form" button, optionally
+// sendReminder sends a reminder message with the Day-form button, optionally
 // pre-selecting a date in the form (used for the yesterday catch-up).
 func sendReminder(bot *tgbotapi.BotAPI, webAppURL string, chatID int64, text, targetDate string) {
 	msg := tgbotapi.NewMessage(chatID, text)
 	if webAppURL != "" {
-		msg.ReplyMarkup = formKeyboardForDate(webAppURL, targetDate)
+		msg.ReplyMarkup = dayKeyboard(webAppURL, targetDate)
 	}
 	if _, err := bot.Send(msg); err != nil {
 		log.Printf("failed to send reminder: %v", err)
 	}
 }
 
-// dateFilled reports whether the given date already has a row in the sheet.
+// dayFilled reports whether the given date's Day part is already filled.
 // On error it returns false — better to remind than to stay silent.
-func dateFilled(date string) bool {
-	dates, err := existingDates()
+func dayFilled(date string) bool {
+	_, row, err := findDateRow(date)
 	if err != nil {
 		log.Printf("could not check whether %s is filled: %v", date, err)
 		return false
 	}
-	for _, d := range dates {
-		if d == date {
-			return true
-		}
-	}
-	return false
+	return row != nil && partFilled(row, ownerDay)
 }
 
 // settingsMessage shows the current reminder times and how to change them.

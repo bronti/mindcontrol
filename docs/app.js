@@ -4,6 +4,10 @@ const translations = {
   en: {
     title: "Daily check-in",
     subtitle: "How was your day?",
+    title_sleep: "Sleep 🌙",
+    subtitle_sleep: "How did you sleep?",
+    title_day: "Your day ☀️",
+    subtitle_day: "How was your day?",
 
     q_date: "Date",
     date_taken: "This date is already filled — pick another.",
@@ -58,6 +62,10 @@ const translations = {
   ru: {
     title: "Ежедневный чек-ин",
     subtitle: "Как прошёл день?",
+    title_sleep: "Сон 🌙",
+    subtitle_sleep: "Как ты спал(а)?",
+    title_day: "Твой день ☀️",
+    subtitle_day: "Как прошёл день?",
 
     q_date: "Дата",
     date_taken: "Эта дата уже заполнена — выбери другую.",
@@ -135,6 +143,15 @@ function applyTranslations() {
   });
 }
 applyTranslations();
+
+// This page is one of two forms, chosen by ?form=sleep|day (default: day).
+// We hide the other form's fields and only send this part on submit.
+const formMode = new URLSearchParams(location.search).get("form") === "sleep" ? "sleep" : "day";
+document.querySelector("h1").textContent = dict[formMode === "sleep" ? "title_sleep" : "title_day"];
+document.querySelector(".subtitle").textContent = dict[formMode === "sleep" ? "subtitle_sleep" : "subtitle_day"];
+document.querySelectorAll(formMode === "sleep" ? ".part-day" : ".part-sleep").forEach((el) => {
+  el.hidden = true;
+});
 
 const form = document.getElementById("form");
 const submitButton = form.querySelector('button[type="submit"]');
@@ -354,6 +371,7 @@ form.addEventListener("submit", (event) => {
 
   const minutes = sleepMinutes();
   const answers = {
+    form_type: formMode,
     date: dateInput.value,
     bedtime: bedtime.value,
     wake: wake.value,

@@ -25,8 +25,9 @@ type medication struct {
 // (see docs/app.js). The json tags must match the keys used there.
 // SleepHours is a pointer so a missing time (null) stays distinct from 0.
 type formAnswers struct {
-	Date         string       `json:"date"` // the day being filled in (chosen in the form)
-	FilledAt     string       `json:"-"`    // when the form was submitted; set by the bot
+	FormType     string       `json:"form_type"` // "sleep" or "day" — which half of the day this is
+	Date         string       `json:"date"`      // the day being filled in (chosen in the form)
+	FilledAt     string       `json:"-"`         // when the form was submitted; set by the bot
 	Bedtime      string       `json:"bedtime"`
 	Wake         string       `json:"wake"`
 	SleepHours   *float64     `json:"sleep_hours"`
@@ -50,37 +51,46 @@ type formAnswers struct {
 	Note         string       `json:"note"`
 }
 
+// Column ownership: which form fills a column. "meta" columns (date, filled-at)
+// are written on every submission; "sleep"/"day" columns only by their own form.
+const (
+	ownerMeta  = "meta"
+	ownerSleep = "sleep"
+	ownerDay   = "day"
+)
+
 // columns is the single source of truth for the Makhi-Bot tab layout: the order
-// here defines BOTH the header row and every data row, so the two can never
-// drift apart. To add a question, add one entry AT THE END. Never reorder or
-// delete an entry — that would misalign every existing row against the header.
+// here defines BOTH the header row and every data row. Grouped as
+// date | sleep… | day… | filled-at. Reorder ONLY while the tab is empty — a
+// reorder misaligns existing rows against the header.
 var columns = []struct {
 	header string
+	owner  string
 	value  func(a formAnswers) interface{}
 }{
-	{"Date", func(a formAnswers) interface{} { return a.Date }},
-	{"Fell asleep", func(a formAnswers) interface{} { return a.Bedtime }},
-	{"Woke up", func(a formAnswers) interface{} { return a.Wake }},
-	{"Sleep hours", func(a formAnswers) interface{} { return sleepCell(a.SleepHours) }},
-	{"Sleep quality", func(a formAnswers) interface{} { return a.SleepQuality }},
-	{"Dreams", func(a formAnswers) interface{} { return a.Dreams }},
-	{"Overall state", func(a formAnswers) interface{} { return a.State }},
-	{"Anxiety", func(a formAnswers) interface{} { return a.Anxiety }},
-	{"Irritability", func(a formAnswers) interface{} { return a.Irritability }},
-	{"Libido", func(a formAnswers) interface{} { return a.Libido }},
-	{"Drowsiness", func(a formAnswers) interface{} { return a.Drowsiness }},
-	{"Appetite", func(a formAnswers) interface{} { return a.Appetite }},
-	{"Energy", func(a formAnswers) interface{} { return a.Energy }},
-	{"Ate well", func(a formAnswers) interface{} { return a.AteWell }},
-	{"Menstruation", func(a formAnswers) interface{} { return yesNo(a.Menstruation) }},
-	{"Sex", func(a formAnswers) interface{} { return yesNo(a.Sex) }},
-	{"Masturbation", func(a formAnswers) interface{} { return yesNo(a.Masturbation) }},
-	{"Headache", func(a formAnswers) interface{} { return yesNo(a.Headache) }},
-	{"Medications", func(a formAnswers) interface{} { return formatMedications(a.Medications) }},
-	{"Diary", func(a formAnswers) interface{} { return a.Note }},
-	{"Filled at", func(a formAnswers) interface{} { return a.FilledAt }},
-	{"Dream notes", func(a formAnswers) interface{} { return dreamNote(a) }},
-	{"Smoking", func(a formAnswers) interface{} { return yesNo(a.Smoking) }},
+	{"Date", ownerMeta, func(a formAnswers) interface{} { return a.Date }},
+	{"Fell asleep", ownerSleep, func(a formAnswers) interface{} { return a.Bedtime }},
+	{"Woke up", ownerSleep, func(a formAnswers) interface{} { return a.Wake }},
+	{"Sleep hours", ownerSleep, func(a formAnswers) interface{} { return sleepCell(a.SleepHours) }},
+	{"Sleep quality", ownerSleep, func(a formAnswers) interface{} { return a.SleepQuality }},
+	{"Dreams", ownerSleep, func(a formAnswers) interface{} { return a.Dreams }},
+	{"Dream notes", ownerSleep, func(a formAnswers) interface{} { return dreamNote(a) }},
+	{"Overall state", ownerDay, func(a formAnswers) interface{} { return a.State }},
+	{"Anxiety", ownerDay, func(a formAnswers) interface{} { return a.Anxiety }},
+	{"Irritability", ownerDay, func(a formAnswers) interface{} { return a.Irritability }},
+	{"Libido", ownerDay, func(a formAnswers) interface{} { return a.Libido }},
+	{"Drowsiness", ownerDay, func(a formAnswers) interface{} { return a.Drowsiness }},
+	{"Appetite", ownerDay, func(a formAnswers) interface{} { return a.Appetite }},
+	{"Energy", ownerDay, func(a formAnswers) interface{} { return a.Energy }},
+	{"Ate well", ownerDay, func(a formAnswers) interface{} { return a.AteWell }},
+	{"Menstruation", ownerDay, func(a formAnswers) interface{} { return yesNo(a.Menstruation) }},
+	{"Sex", ownerDay, func(a formAnswers) interface{} { return yesNo(a.Sex) }},
+	{"Masturbation", ownerDay, func(a formAnswers) interface{} { return yesNo(a.Masturbation) }},
+	{"Headache", ownerDay, func(a formAnswers) interface{} { return yesNo(a.Headache) }},
+	{"Smoking", ownerDay, func(a formAnswers) interface{} { return yesNo(a.Smoking) }},
+	{"Medications", ownerDay, func(a formAnswers) interface{} { return formatMedications(a.Medications) }},
+	{"Diary", ownerDay, func(a formAnswers) interface{} { return a.Note }},
+	{"Filled at", ownerMeta, func(a formAnswers) interface{} { return a.FilledAt }},
 }
 
 // dreamNote returns the dream text only when there actually were dreams or
@@ -102,14 +112,37 @@ func headerRow() []interface{} {
 	return row
 }
 
-// row lays the answers out as one spreadsheet row, in schema order — the same
-// order as headerRow, so values always land under the right header.
-func (a formAnswers) row() []interface{} {
+// mergeRow overlays one form's answers onto an existing row (pass nil existing
+// for a brand-new day). Columns owned by the submitting part — and all meta
+// columns — get fresh values; every other column keeps what was already there.
+func mergeRow(existing []interface{}, a formAnswers, part string) []interface{} {
 	row := make([]interface{}, len(columns))
+	for i := range columns {
+		if i < len(existing) {
+			row[i] = existing[i]
+		} else {
+			row[i] = ""
+		}
+	}
 	for i, c := range columns {
-		row[i] = c.value(a)
+		if c.owner == part || c.owner == ownerMeta {
+			row[i] = c.value(a)
+		}
 	}
 	return row
+}
+
+// partFilled reports whether a row already has any value in the given part's columns.
+func partFilled(row []interface{}, part string) bool {
+	for i, c := range columns {
+		if c.owner != part {
+			continue
+		}
+		if i < len(row) && fmt.Sprint(row[i]) != "" {
+			return true
+		}
+	}
+	return false
 }
 
 // yesNo renders a boolean as a spreadsheet-friendly "yes"/"no".
@@ -240,30 +273,38 @@ func main() {
 // form and the new version forces the page (and app.js/style.css) to reload.
 var formVersion string
 
-// formKeyboard builds a reply keyboard (shown above the text input) with a
-// single button that opens the Mini App form. Only a reply-keyboard button can
-// send answers straight back to the bot via tg.sendData → WebAppData.
+// formKeyboard builds a reply keyboard with two buttons — one opens the Sleep
+// form, one opens the Day form. Only a reply-keyboard button can send answers
+// straight back to the bot via tg.sendData → WebAppData.
 func formKeyboard(baseURL string) tgbotapi.ReplyKeyboardMarkup {
-	return formKeyboardForDate(baseURL, "")
-}
-
-// formKeyboardForDate is like formKeyboard but pre-selects a date in the form
-// (used by the yesterday catch-up reminder). Pass "" for the default (today).
-func formKeyboardForDate(baseURL, targetDate string) tgbotapi.ReplyKeyboardMarkup {
-	dates, err := existingDates()
+	sleepFilled, dayFilled, err := filledByPart()
 	if err != nil {
-		log.Printf("could not read existing dates for the form link: %v", err)
+		log.Printf("could not read filled dates for the form links: %v", err)
 	}
-	link := buildFormURL(baseURL, dates, targetDate)
-	button := tgbotapi.NewKeyboardButtonWebApp(translate("open_form"), tgbotapi.WebAppInfo{URL: link})
-	return tgbotapi.NewReplyKeyboard(tgbotapi.NewKeyboardButtonRow(button))
+	sleepBtn := tgbotapi.NewKeyboardButtonWebApp(translate("open_sleep"),
+		tgbotapi.WebAppInfo{URL: buildFormURL(baseURL, ownerSleep, "", sleepFilled)})
+	dayBtn := tgbotapi.NewKeyboardButtonWebApp(translate("open_day"),
+		tgbotapi.WebAppInfo{URL: buildFormURL(baseURL, ownerDay, "", dayFilled)})
+	return tgbotapi.NewReplyKeyboard(tgbotapi.NewKeyboardButtonRow(sleepBtn, dayBtn))
 }
 
-// buildFormURL adds the cache-buster version, an optional pre-selected date, and
-// the already-filled dates to the form URL. The "filled" list lets the form grey
-// out days that already have a row; it's capped to the most recent dates to keep
-// the URL from growing forever.
-func buildFormURL(baseURL string, dates []string, targetDate string) string {
+// dayKeyboard builds a keyboard with just the Day-form button, optionally
+// pre-selecting a date (used by the catch-up reminder for yesterday).
+func dayKeyboard(baseURL, targetDate string) tgbotapi.ReplyKeyboardMarkup {
+	_, dayFilled, err := filledByPart()
+	if err != nil {
+		log.Printf("could not read filled dates for the form link: %v", err)
+	}
+	btn := tgbotapi.NewKeyboardButtonWebApp(translate("open_day"),
+		tgbotapi.WebAppInfo{URL: buildFormURL(baseURL, ownerDay, targetDate, dayFilled)})
+	return tgbotapi.NewReplyKeyboard(tgbotapi.NewKeyboardButtonRow(btn))
+}
+
+// buildFormURL builds the Mini App URL for one form: the cache-buster version,
+// which form to show (?form=), an optional pre-selected date, and the dates whose
+// matching part is already filled (so the form can grey them out). The filled
+// list is capped to the most recent dates to keep the URL from growing forever.
+func buildFormURL(baseURL, part, targetDate string, filled []string) string {
 	u, err := url.Parse(baseURL)
 	if err != nil {
 		return baseURL
@@ -272,12 +313,13 @@ func buildFormURL(baseURL string, dates []string, targetDate string) string {
 	if formVersion != "" {
 		q.Set("v", formVersion)
 	}
+	q.Set("form", part)
 	if targetDate != "" {
 		q.Set("date", targetDate)
 	}
-	if len(dates) > 0 {
+	if len(filled) > 0 {
 		const maxDates = 120
-		sorted := append([]string(nil), dates...)
+		sorted := append([]string(nil), filled...)
 		sort.Strings(sorted) // ISO dates sort chronologically
 		if len(sorted) > maxDates {
 			sorted = sorted[len(sorted)-maxDates:] // keep the most recent
@@ -301,51 +343,61 @@ func rememberChat(chatID int64) {
 	log.Printf("reminders will be sent to chat %d", chatID)
 }
 
-// handleFormSubmission parses the form's JSON, checks the chosen date is valid
-// and not already filled, appends the row, and confirms (or reports an error).
+// handleFormSubmission parses one form's JSON, validates it, and merges it into
+// that day's row — creating the row if new, updating it if it already exists.
+// Re-submitting an already-filled part is refused so nothing is overwritten.
 func handleFormSubmission(bot *tgbotapi.BotAPI, message *tgbotapi.Message, webAppURL string) {
 	raw := message.WebAppData.Data
 	log.Printf("[@%s] form submitted: %s", message.From.UserName, raw)
 
-	var answers formAnswers
-	if err := json.Unmarshal([]byte(raw), &answers); err != nil {
+	var a formAnswers
+	if err := json.Unmarshal([]byte(raw), &a); err != nil {
 		log.Printf("could not parse form data: %v", err)
 		reply(bot, message.Chat.ID, translate("form_error"))
 		return
 	}
 
+	if a.FormType != ownerSleep && a.FormType != ownerDay {
+		log.Printf("unknown form_type: %q", a.FormType)
+		reply(bot, message.Chat.ID, translate("form_error"))
+		return
+	}
 	// The date is chosen in the form — make sure it's a real YYYY-MM-DD.
-	if _, err := time.Parse("2006-01-02", answers.Date); err != nil {
-		log.Printf("bad date from form: %q (%v)", answers.Date, err)
+	if _, err := time.Parse("2006-01-02", a.Date); err != nil {
+		log.Printf("bad date from form: %q (%v)", a.Date, err)
 		reply(bot, message.Chat.ID, translate("form_error"))
 		return
 	}
 
-	// Refuse to fill a day that already has a row. This is the authoritative
-	// check — the form's red highlight can be out of date.
-	dates, err := existingDates()
+	rowNum, existing, err := findDateRow(a.Date)
 	if err != nil {
-		log.Printf("could not check existing dates: %v", err)
-		reply(bot, message.Chat.ID, translate("form_error"))
-		return
-	}
-	for _, d := range dates {
-		if d == answers.Date {
-			reply(bot, message.Chat.ID, fmt.Sprintf(translate("date_taken"), answers.Date))
-			return
-		}
-	}
-
-	// Stamp when the form was actually submitted, then save.
-	answers.FilledAt = time.Now().Format("2006-01-02 15:04:05")
-	if err := appendRow(answers.row()...); err != nil {
-		log.Printf("could not save answers to the sheet: %v", err)
+		log.Printf("could not look up the date row: %v", err)
 		reply(bot, message.Chat.ID, translate("form_error"))
 		return
 	}
 
-	// Confirm, and offer a fresh button so the next backfill knows this date is taken.
-	msg := tgbotapi.NewMessage(message.Chat.ID, translate("form_saved"))
+	// This part is already filled for that day — don't overwrite it.
+	if rowNum != 0 && partFilled(existing, a.FormType) {
+		reply(bot, message.Chat.ID, fmt.Sprintf(translate("taken_"+a.FormType), a.Date))
+		return
+	}
+
+	// Stamp the submission time and merge this part into the day's row.
+	a.FilledAt = time.Now().Format("2006-01-02 15:04:05")
+	merged := mergeRow(existing, a, a.FormType)
+	if rowNum != 0 {
+		err = updateRow(rowNum, merged)
+	} else {
+		err = appendRow(merged...)
+	}
+	if err != nil {
+		log.Printf("could not save the row: %v", err)
+		reply(bot, message.Chat.ID, translate("form_error"))
+		return
+	}
+
+	// Confirm, and offer fresh buttons so the filled-out days update.
+	msg := tgbotapi.NewMessage(message.Chat.ID, translate("saved_"+a.FormType))
 	if webAppURL != "" {
 		msg.ReplyMarkup = formKeyboard(webAppURL)
 	}
