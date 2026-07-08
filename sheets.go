@@ -87,21 +87,6 @@ func readDataRows() ([][]interface{}, error) {
 	return resp.Values, nil
 }
 
-// findDateRow returns the 1-based sheet row number and current values for a date,
-// or row number 0 if the date isn't in the tab yet.
-func findDateRow(date string) (int, []interface{}, error) {
-	rows, err := readDataRows()
-	if err != nil {
-		return 0, nil, err
-	}
-	for i, row := range rows {
-		if cellString(row, 0) == date {
-			return i + 2, row, nil // +2: data starts at sheet row 2
-		}
-	}
-	return 0, nil, nil
-}
-
 // updateRow overwrites an existing row (1-based) with new values.
 func updateRow(rowNumber int, values []interface{}) error {
 	srv, err := service()
@@ -141,6 +126,17 @@ func syncHeader(header []interface{}) error {
 
 // --- row-set queries (pure: operate on already-read rows, so one read serves a
 // whole keyboard build, and they're unit-testable without the live sheet) ---
+
+// findDateRow returns a date's 1-based sheet row number and its values, or row
+// number 0 (and a nil row) if the date isn't among the given rows yet.
+func findDateRow(rows [][]interface{}, date string) (int, []interface{}) {
+	for i, row := range rows {
+		if cellString(row, 0) == date {
+			return i + 2, row // +2: data starts at sheet row 2
+		}
+	}
+	return 0, nil
+}
 
 // filledByPartRows returns the dates whose sleep part / day part are filled.
 func filledByPartRows(rows [][]interface{}) (sleepDates, dayDates []string) {
@@ -214,16 +210,6 @@ func latestMedicationsRows(rows [][]interface{}, part, before string) string {
 		}
 	}
 	return bestMeds
-}
-
-// latestMedications is the one-off (reads the sheet itself) variant used where a
-// row set isn't already at hand.
-func latestMedications(part, before string) (string, error) {
-	rows, err := readDataRows()
-	if err != nil {
-		return "", err
-	}
-	return latestMedicationsRows(rows, part, before), nil
 }
 
 // calToken is a part's calendar token: "-" if the part isn't filled, "f" if it's

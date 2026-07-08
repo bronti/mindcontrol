@@ -109,16 +109,17 @@ func (s *server) handleEditRequest(message *tgbotapi.Message, raw string) {
 		return
 	}
 
-	_, row, err := findDateRow(req.Date) // row is nil when the day has no entry yet
+	rows, err := readDataRows()
 	if err != nil {
-		log.Printf("could not read the day's row: %v", err)
+		log.Printf("could not read the sheet for the edit request: %v", err)
 		s.reply(message.Chat.ID, translate("form_error"))
 		return
 	}
+	_, row := findDateRow(rows, req.Date) // row is nil when the day has no entry yet
 
 	msg := tgbotapi.NewMessage(message.Chat.ID,
 		fmt.Sprintf(translate("edit_prompt"), translate("part_"+req.Part), req.Date))
-	msg.ReplyMarkup = s.editKeyboard(req.Part, req.Date, row)
+	msg.ReplyMarkup = s.editKeyboard(req.Part, req.Date, row, latestMedicationsRows(rows, req.Part, req.Date))
 	s.send(msg)
 }
 
@@ -145,12 +146,13 @@ func (s *server) handleFormSubmission(message *tgbotapi.Message) {
 		return
 	}
 
-	rowNum, existing, err := findDateRow(a.Date)
+	rows, err := readDataRows()
 	if err != nil {
-		log.Printf("could not look up the date row: %v", err)
+		log.Printf("could not read the sheet before saving: %v", err)
 		s.reply(message.Chat.ID, translate("form_error"))
 		return
 	}
+	rowNum, existing := findDateRow(rows, a.Date)
 
 	// A normal submission won't overwrite an already-filled part; an edit will.
 	if !a.Edit && rowNum != 0 && partFilled(existing, a.FormType) {
@@ -231,23 +233,13 @@ func (s *server) dayKeyboard(targetDate string) tgbotapi.ReplyKeyboardMarkup {
 }
 
 // editKeyboard opens the form pre-filled to edit one day+part.
-func (s *server) editKeyboard(part, date string, row []interface{}) tgbotapi.ReplyKeyboardMarkup {
+func (s *server) editKeyboard(part, date string, row []interface{}, defaultMeds string) tgbotapi.ReplyKeyboardMarkup {
 	labelKey := "open_sleep"
 	if part == ownerDay {
 		labelKey = "open_day"
 	}
-	btn := s.webAppButton(labelKey, buildEditURL(s.webAppURL, part, date, row, latestMedsOrLog(part, date)))
+	btn := s.webAppButton(labelKey, buildEditURL(s.webAppURL, part, date, row, defaultMeds))
 	return tgbotapi.NewReplyKeyboard(tgbotapi.NewKeyboardButtonRow(btn))
-}
-
-// latestMedsOrLog fetches the most recent prior medications for a part, logging
-// (but swallowing) a read error so a hiccup just yields no pre-fill.
-func latestMedsOrLog(part, before string) string {
-	meds, err := latestMedications(part, before)
-	if err != nil {
-		log.Printf("could not read latest medications for %s: %v", part, err)
-	}
-	return meds
 }
 
 func (s *server) webAppButton(labelKey, link string) tgbotapi.KeyboardButton {

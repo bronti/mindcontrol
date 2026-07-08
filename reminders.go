@@ -63,11 +63,12 @@ func (s *server) sendReminder(chatID int64, text, targetDate string) {
 // dayFilled reports whether the date's Day part is filled. On error it returns
 // false — better to remind than to stay silent.
 func dayFilled(date string) bool {
-	_, row, err := findDateRow(date)
+	rows, err := readDataRows()
 	if err != nil {
 		log.Printf("could not check whether %s is filled: %v", date, err)
 		return false
 	}
+	_, row := findDateRow(rows, date)
 	return row != nil && partFilled(row, ownerDay)
 }
 
