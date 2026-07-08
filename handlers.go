@@ -199,47 +199,58 @@ func (s *server) rememberChat(chatID int64) {
 // formKeyboard offers the two entry forms and the calendar. Only a reply-keyboard
 // button can send answers back to the bot via tg.sendData → WebAppData.
 func (s *server) formKeyboard() tgbotapi.ReplyKeyboardMarkup {
-	// One read serves the whole keyboard; on error rows is nil and the helpers
-	// degrade gracefully (no filled/pre-fill info, buttons still work).
-	rows, err := readDataRows()
-	if err != nil {
-		log.Printf("could not read sheet data for the keyboard: %v", err)
-	}
-	sleepDates, dayDates := filledByPartRows(rows)
-	today := time.Now().Format(isoDate)
-	sleepBtn := s.webAppButton("open_sleep", buildFormURL(s.webAppURL, ownerSleep, "", sleepDates, latestMedicationsRows(rows, ownerSleep, today)))
-	dayBtn := s.webAppButton("open_day", buildFormURL(s.webAppURL, ownerDay, "", dayDates, latestMedicationsRows(rows, ownerDay, today)))
-	calBtn := s.webAppButton("open_calendar", calendarURL(s.webAppURL, calendarDataRows(rows)))
+	rows := readRowsOrLog() // one read serves all three buttons
 	return tgbotapi.NewReplyKeyboard(
-		tgbotapi.NewKeyboardButtonRow(sleepBtn, dayBtn),
-		tgbotapi.NewKeyboardButtonRow(calBtn),
+		tgbotapi.NewKeyboardButtonRow(s.formButton(rows, ownerSleep, ""), s.formButton(rows, ownerDay, "")),
+		tgbotapi.NewKeyboardButtonRow(s.webAppButton("open_calendar", calendarURL(s.webAppURL, calendarDataRows(rows)))),
 	)
 }
 
 // dayKeyboard is just the Day-form button, optionally pre-set to a date (used by
 // the catch-up reminder).
 func (s *server) dayKeyboard(targetDate string) tgbotapi.ReplyKeyboardMarkup {
-	rows, err := readDataRows()
-	if err != nil {
-		log.Printf("could not read sheet data for the keyboard: %v", err)
-	}
-	_, dayDates := filledByPartRows(rows)
-	before := targetDate
-	if before == "" {
-		before = time.Now().Format(isoDate)
-	}
-	btn := s.webAppButton("open_day", buildFormURL(s.webAppURL, ownerDay, targetDate, dayDates, latestMedicationsRows(rows, ownerDay, before)))
-	return tgbotapi.NewReplyKeyboard(tgbotapi.NewKeyboardButtonRow(btn))
+	return tgbotapi.NewReplyKeyboard(tgbotapi.NewKeyboardButtonRow(s.formButton(readRowsOrLog(), ownerDay, targetDate)))
 }
 
 // editKeyboard opens the form pre-filled to edit one day+part.
 func (s *server) editKeyboard(part, date string, row []any, defaultMeds string) tgbotapi.ReplyKeyboardMarkup {
-	labelKey := "open_sleep"
-	if part == ownerDay {
-		labelKey = "open_day"
-	}
-	btn := s.webAppButton(labelKey, buildEditURL(s.webAppURL, part, date, row, defaultMeds))
+	btn := s.webAppButton(formLabelKey(part), buildEditURL(s.webAppURL, part, date, row, defaultMeds))
 	return tgbotapi.NewReplyKeyboard(tgbotapi.NewKeyboardButtonRow(btn))
+}
+
+// formButton builds one form-opening button from already-read rows: its URL
+// carries the part's filled dates (to grey them out) and the most recent
+// medications (to pre-fill). An empty targetDate means "opened for today".
+func (s *server) formButton(rows [][]any, part, targetDate string) tgbotapi.KeyboardButton {
+	sleepDates, dayDates := filledByPartRows(rows)
+	filled := sleepDates
+	if part == ownerDay {
+		filled = dayDates
+	}
+	medsBefore := targetDate
+	if medsBefore == "" {
+		medsBefore = time.Now().Format(isoDate)
+	}
+	link := buildFormURL(s.webAppURL, part, targetDate, filled, latestMedicationsRows(rows, part, medsBefore))
+	return s.webAppButton(formLabelKey(part), link)
+}
+
+// formLabelKey is the translation key for a part's button label.
+func formLabelKey(part string) string {
+	if part == ownerSleep {
+		return "open_sleep"
+	}
+	return "open_day"
+}
+
+// readRowsOrLog reads the sheet, logging (not failing) on error — a keyboard
+// built from nil rows still works, just without filled/pre-fill info.
+func readRowsOrLog() [][]any {
+	rows, err := readDataRows()
+	if err != nil {
+		log.Printf("could not read sheet data for the keyboard: %v", err)
+	}
+	return rows
 }
 
 func (s *server) webAppButton(labelKey, link string) tgbotapi.KeyboardButton {
