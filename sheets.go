@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"os"
 	"sort"
 	"strings"
 	"sync"
@@ -14,6 +15,9 @@ import (
 // ID of the Google Sheet (from the URL, between /d/ and /edit).
 const spreadsheetID = "1bpCNYzsXwgHFLL4ylm3g3Smsb140kMUYKx2zcViEZAw"
 
+// The service account's key, downloaded from Google Cloud (gitignored).
+const credentialsFile = "google-cloud-key.json"
+
 // The Sheets client is created once and reused: building it reads the credentials
 // file and sets up an HTTP client, which we don't want to redo on every call.
 var (
@@ -24,8 +28,13 @@ var (
 
 func service() (*sheets.Service, error) {
 	sheetsOnce.Do(func() {
+		key, err := os.ReadFile(credentialsFile)
+		if err != nil {
+			sheetsErr = err
+			return
+		}
 		sheetsSvc, sheetsErr = sheets.NewService(context.Background(),
-			option.WithCredentialsFile("google-cloud-key.json"))
+			option.WithCredentialsJSON(key))
 	})
 	if sheetsErr != nil {
 		return nil, fmt.Errorf("connecting to Google Sheets: %w", sheetsErr)
