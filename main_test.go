@@ -45,7 +45,7 @@ func TestBuildFormURLDefaultMeds(t *testing.T) {
 // test their logic without touching the live sheet.
 
 func TestFilledByPartRows(t *testing.T) {
-	rows := [][]interface{}{
+	rows := [][]any{
 		mergeRow(nil, formAnswers{Date: "2026-07-01", Bedtime: "23:00"}, ownerSleep), // sleep only
 		mergeRow(nil, formAnswers{Date: "2026-07-02", State: ptr(5)}, ownerDay),      // day only
 	}
@@ -59,7 +59,7 @@ func TestFilledByPartRows(t *testing.T) {
 }
 
 func TestCalendarDataRows(t *testing.T) {
-	rows := [][]interface{}{
+	rows := [][]any{
 		mergeRow(nil, formAnswers{Date: "2026-07-02", State: ptr(7)}, ownerDay),
 		mergeRow(nil, formAnswers{Date: "2026-07-01", Rested: ptr(3)}, ownerSleep),
 	}
@@ -71,7 +71,7 @@ func TestCalendarDataRows(t *testing.T) {
 
 func TestLatestMedicationsRows(t *testing.T) {
 	med := func(name, dose string) []medication { return []medication{{Name: name, Dose: dose}} }
-	rows := [][]interface{}{
+	rows := [][]any{
 		mergeRow(nil, formAnswers{Date: "2026-07-01", Medications: med("Lamotrigine", "200")}, ownerDay),
 		mergeRow(nil, formAnswers{Date: "2026-07-05", Medications: med("Olanzapine", "5")}, ownerDay),
 		mergeRow(nil, formAnswers{Date: "2026-07-03", Medications: med("Fluoxetine", "25")}, ownerDay),

@@ -62,36 +62,36 @@ var columns = []struct {
 	header    string
 	owner     string
 	editParam string
-	value     func(a formAnswers) interface{}
+	value     func(a formAnswers) any
 }{
-	{"Date", ownerMeta, "", func(a formAnswers) interface{} { return a.Date }},
-	{"Fell asleep", ownerSleep, "p_bedtime", func(a formAnswers) interface{} { return a.Bedtime }},
-	{"Woke up", ownerSleep, "p_wake", func(a formAnswers) interface{} { return a.Wake }},
-	{"Sleep hours", ownerSleep, "", func(a formAnswers) interface{} { return sleepCell(a.SleepHours) }},
-	{"How rested", ownerSleep, "p_rested", func(a formAnswers) interface{} { return numCell(a.Rested) }},
-	{"Dreams", ownerSleep, "p_dreams", func(a formAnswers) interface{} { return a.Dreams }},
-	{"Dream notes", ownerSleep, "p_dream_note", func(a formAnswers) interface{} { return dreamNote(a) }},
-	{"Sleep medications", ownerSleep, "p_sleep_meds", func(a formAnswers) interface{} { return formatMedications(a.SleepMedications) }},
-	{"Overall state", ownerDay, "p_state", func(a formAnswers) interface{} { return numCell(a.State) }},
-	{"Anxiety", ownerDay, "p_anxiety", func(a formAnswers) interface{} { return numCell(a.Anxiety) }},
-	{"Irritability", ownerDay, "p_irritability", func(a formAnswers) interface{} { return numCell(a.Irritability) }},
-	{"Libido", ownerDay, "p_libido", func(a formAnswers) interface{} { return numCell(a.Libido) }},
-	{"Drowsiness", ownerDay, "p_drowsiness", func(a formAnswers) interface{} { return numCell(a.Drowsiness) }},
-	{"Appetite", ownerDay, "p_appetite", func(a formAnswers) interface{} { return numCell(a.Appetite) }},
-	{"Energy", ownerDay, "p_energy", func(a formAnswers) interface{} { return numCell(a.Energy) }},
-	{"Ate well", ownerDay, "p_ate_well", func(a formAnswers) interface{} { return numCell(a.AteWell) }},
-	{"Menstruation", ownerDay, "p_menstruation", func(a formAnswers) interface{} { return yesNo(a.Menstruation) }},
-	{"Sex", ownerDay, "p_sex", func(a formAnswers) interface{} { return yesNo(a.Sex) }},
-	{"Masturbation", ownerDay, "p_masturbation", func(a formAnswers) interface{} { return yesNo(a.Masturbation) }},
-	{"Headache", ownerDay, "p_headache", func(a formAnswers) interface{} { return yesNo(a.Headache) }},
-	{"Smoking", ownerDay, "p_smoking", func(a formAnswers) interface{} { return yesNo(a.Smoking) }},
-	{"Medications", ownerDay, "p_meds", func(a formAnswers) interface{} { return formatMedications(a.Medications) }},
-	{"Diary", ownerDay, "p_note", func(a formAnswers) interface{} { return a.Note }},
-	{"Last modified", ownerMeta, "", func(a formAnswers) interface{} { return a.LastModified }},
+	{"Date", ownerMeta, "", func(a formAnswers) any { return a.Date }},
+	{"Fell asleep", ownerSleep, "p_bedtime", func(a formAnswers) any { return a.Bedtime }},
+	{"Woke up", ownerSleep, "p_wake", func(a formAnswers) any { return a.Wake }},
+	{"Sleep hours", ownerSleep, "", func(a formAnswers) any { return sleepCell(a.SleepHours) }},
+	{"How rested", ownerSleep, "p_rested", func(a formAnswers) any { return numCell(a.Rested) }},
+	{"Dreams", ownerSleep, "p_dreams", func(a formAnswers) any { return a.Dreams }},
+	{"Dream notes", ownerSleep, "p_dream_note", func(a formAnswers) any { return dreamNote(a) }},
+	{"Sleep medications", ownerSleep, "p_sleep_meds", func(a formAnswers) any { return formatMedications(a.SleepMedications) }},
+	{"Overall state", ownerDay, "p_state", func(a formAnswers) any { return numCell(a.State) }},
+	{"Anxiety", ownerDay, "p_anxiety", func(a formAnswers) any { return numCell(a.Anxiety) }},
+	{"Irritability", ownerDay, "p_irritability", func(a formAnswers) any { return numCell(a.Irritability) }},
+	{"Libido", ownerDay, "p_libido", func(a formAnswers) any { return numCell(a.Libido) }},
+	{"Drowsiness", ownerDay, "p_drowsiness", func(a formAnswers) any { return numCell(a.Drowsiness) }},
+	{"Appetite", ownerDay, "p_appetite", func(a formAnswers) any { return numCell(a.Appetite) }},
+	{"Energy", ownerDay, "p_energy", func(a formAnswers) any { return numCell(a.Energy) }},
+	{"Ate well", ownerDay, "p_ate_well", func(a formAnswers) any { return numCell(a.AteWell) }},
+	{"Menstruation", ownerDay, "p_menstruation", func(a formAnswers) any { return yesNo(a.Menstruation) }},
+	{"Sex", ownerDay, "p_sex", func(a formAnswers) any { return yesNo(a.Sex) }},
+	{"Masturbation", ownerDay, "p_masturbation", func(a formAnswers) any { return yesNo(a.Masturbation) }},
+	{"Headache", ownerDay, "p_headache", func(a formAnswers) any { return yesNo(a.Headache) }},
+	{"Smoking", ownerDay, "p_smoking", func(a formAnswers) any { return yesNo(a.Smoking) }},
+	{"Medications", ownerDay, "p_meds", func(a formAnswers) any { return formatMedications(a.Medications) }},
+	{"Diary", ownerDay, "p_note", func(a formAnswers) any { return a.Note }},
+	{"Last modified", ownerMeta, "", func(a formAnswers) any { return a.LastModified }},
 }
 
-func headerRow() []interface{} {
-	row := make([]interface{}, len(columns))
+func headerRow() []any {
+	row := make([]any, len(columns))
 	for i, c := range columns {
 		row[i] = c.header
 	}
@@ -102,8 +102,8 @@ func headerRow() []interface{} {
 // columns owned by the submitting part — plus meta columns — get fresh values;
 // every other column keeps what was already there. This is what lets the sleep and
 // day forms fill the same row at different times.
-func mergeRow(existing []interface{}, a formAnswers, part string) []interface{} {
-	row := make([]interface{}, len(columns))
+func mergeRow(existing []any, a formAnswers, part string) []any {
+	row := make([]any, len(columns))
 	for i := range columns {
 		if i < len(existing) {
 			row[i] = existing[i]
@@ -128,7 +128,7 @@ func columnIndex(header string) int {
 	return -1
 }
 
-func partFilled(row []interface{}, part string) bool {
+func partFilled(row []any, part string) bool {
 	for i, c := range columns {
 		if c.owner == part && i < len(row) && fmt.Sprint(row[i]) != "" {
 			return true
@@ -158,14 +158,14 @@ func yesNo(b bool) string {
 
 // sleepCell / numCell render a pointer value, or "" when it was never set (nil) —
 // so an untouched slider or a missing sleep time stays blank rather than 0.
-func sleepCell(hours *float64) interface{} {
+func sleepCell(hours *float64) any {
 	if hours == nil {
 		return ""
 	}
 	return *hours
 }
 
-func numCell(n *int) interface{} {
+func numCell(n *int) any {
 	if n == nil {
 		return ""
 	}

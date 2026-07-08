@@ -233,7 +233,7 @@ func (s *server) dayKeyboard(targetDate string) tgbotapi.ReplyKeyboardMarkup {
 }
 
 // editKeyboard opens the form pre-filled to edit one day+part.
-func (s *server) editKeyboard(part, date string, row []interface{}, defaultMeds string) tgbotapi.ReplyKeyboardMarkup {
+func (s *server) editKeyboard(part, date string, row []any, defaultMeds string) tgbotapi.ReplyKeyboardMarkup {
 	labelKey := "open_sleep"
 	if part == ownerDay {
 		labelKey = "open_day"

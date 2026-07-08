@@ -47,7 +47,7 @@ func buildFormURL(baseURL, part, targetDate string, filled []string, defaultMeds
 
 // buildEditURL opens the form for one day+part to edit: the date is locked, the
 // mode is update|create, and the part's existing values ride along as p_* params.
-func buildEditURL(baseURL, part, date string, row []interface{}, defaultMeds string) string {
+func buildEditURL(baseURL, part, date string, row []any, defaultMeds string) string {
 	u, err := url.Parse(baseURL)
 	if err != nil {
 		return baseURL
