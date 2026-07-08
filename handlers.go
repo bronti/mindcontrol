@@ -15,6 +15,7 @@ import (
 type server struct {
 	bot       *tgbotapi.BotAPI
 	webAppURL string
+	ownerID   int64 // Telegram user id allowed to use the bot; 0 = open (setup mode)
 }
 
 const isoDate = "2006-01-02"
@@ -23,6 +24,9 @@ const isoDate = "2006-01-02"
 
 func (s *server) handleUpdate(update tgbotapi.Update) {
 	if update.Message == nil {
+		return
+	}
+	if !s.authorized(update.Message) {
 		return
 	}
 	s.rememberChat(update.Message.Chat.ID)

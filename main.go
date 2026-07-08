@@ -3,6 +3,7 @@ package main
 import (
 	"log"
 	"os"
+	"strconv"
 
 	tgbotapi "github.com/OvyFlash/telegram-bot-api"
 	"github.com/joho/godotenv"
@@ -20,6 +21,12 @@ func main() {
 		log.Print("WEB_APP_URL is not set — the form buttons will be hidden (see .env.example)")
 	}
 
+	ownerID, _ := strconv.ParseInt(os.Getenv("OWNER_ID"), 10, 64)
+	if ownerID == 0 {
+		log.Print("OWNER_ID is not set — the bot is OPEN to anyone. Send it a message to see " +
+			"your user id in the log, then set OWNER_ID in .env and restart to lock it to you.")
+	}
+
 	bot, err := tgbotapi.NewBotAPI(token)
 	if err != nil {
 		log.Fatalf("could not connect to the bot (check the token): %v", err)
@@ -31,7 +38,7 @@ func main() {
 	}
 
 	loadSettings()
-	srv := &server{bot: bot, webAppURL: webAppURL}
+	srv := &server{bot: bot, webAppURL: webAppURL, ownerID: ownerID}
 	go srv.runReminders()
 
 	updates := tgbotapi.NewUpdate(0)

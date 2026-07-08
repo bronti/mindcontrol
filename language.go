@@ -39,6 +39,7 @@ var messages = map[string]map[string]string{
 		"settings_usage":    "Usage: /evening HH:MM  (for example: /evening 21:00)",
 		"settings_bad_time": "That doesn't look like a time. Use HH:MM, e.g. 21:00.",
 		"settings_saved":    "Saved ✅ New time: %s",
+		"not_authorized":    "⛔ Sorry, this is a private bot — it only works for its owner.",
 	},
 	"ru": {
 		"start":             "Привет! Я Makhi-Bot 🤖\nНажми кнопку ниже, чтобы открыть форму дня, или /settings — настроить напоминания.",
@@ -65,6 +66,7 @@ var messages = map[string]map[string]string{
 		"settings_usage":    "Формат: /evening ЧЧ:ММ  (например: /evening 21:00)",
 		"settings_bad_time": "Это не похоже на время. Используй ЧЧ:ММ, напр. 21:00.",
 		"settings_saved":    "Сохранил ✅ Новое время: %s",
+		"not_authorized":    "⛔ Извините, это личный бот — он работает только для владельца.",
 	},
 }
 
