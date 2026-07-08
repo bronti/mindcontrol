@@ -49,12 +49,6 @@ const translations = {
     sec_meds_sleep: "Medications (sleep)",
     meds_hint: "Pick what you took; the dose in mg is pre-filled and editable.",
     med_add: "+ Add a medication…",
-    med_lamotrigine: "Lamotrigine",
-    med_olanzapine: "Olanzapine",
-    med_fluoxetine: "Fluoxetine",
-    med_trittico: "Trittico",
-    med_grandaxin: "Grandaxin",
-    med_ibuprofen: "Ibuprofen",
     med_other: "Other…",
     med_name_placeholder: "Medication name",
     mg: "mg",
@@ -110,12 +104,6 @@ const translations = {
     sec_meds_sleep: "Лекарства (сон)",
     meds_hint: "Выбери принятое; доза в мг подставится сама, её можно поправить.",
     med_add: "+ Добавить лекарство…",
-    med_lamotrigine: "Ламотриджин",
-    med_olanzapine: "Оланзапин",
-    med_fluoxetine: "Флуоксетин",
-    med_trittico: "Тритико",
-    med_grandaxin: "Грандаксин",
-    med_ibuprofen: "Ибупрофен",
     med_other: "Другое…",
     med_name_placeholder: "Название лекарства",
     mg: "мг",
@@ -242,18 +230,25 @@ form.querySelectorAll('input[name="dreams"]').forEach((radio) => {
 updateDreamNote();
 
 // ---- Medications: each section (sleep + day) is an independent add-from-dropdown ----
-// The one list of known drugs: the canonical name (what's saved to the sheet; its
-// translation key is "med_" + the name lowercased) and the usual dose in mg,
-// pre-filled when the drug is added ("" = blank). Both pickers are built from it —
-// to offer a new drug, add it here (and its med_* label to the translations).
-const medicationCatalog = [
-  { name: "Lamotrigine", dose: "200" },
-  { name: "Olanzapine", dose: "3" },
-  { name: "Fluoxetine", dose: "25" },
-  { name: "Trittico", dose: "" },
-  { name: "Grandaxin", dose: "" },
-  { name: "Ibuprofen", dose: "" },
-];
+// The drugs the pickers offer come from the bot's URL (?meds=Name 200mg; Other):
+// the list is personal, so it lives in the bot's .env (MEDICATIONS), never in this
+// public page. A drug's dose is the usual one, pre-filled when it's added ("" = blank).
+// With no ?meds= the pickers offer only "Other…" (free-text entry).
+const medicationCatalog = parseMedications(pageParams.get("meds"));
+
+// "Name 200mg; Other" -> [{ name, dose }] (dose "" when absent). The same format
+// the sheet cells and every medication URL param use.
+function parseMedications(str) {
+  if (!str) return [];
+  return str
+    .split(";")
+    .map((s) => s.trim())
+    .filter(Boolean)
+    .map((item) => {
+      const m = item.match(/^(.*?)\s+([\d.]+)mg$/);
+      return m ? { name: m[1], dose: m[2] } : { name: item, dose: "" };
+    });
+}
 
 // Wire up every medications section on the page (the sleep one and the day one).
 document.querySelectorAll(".medications").forEach(setupMedications);
@@ -288,12 +283,12 @@ function setupMedications(section) {
   });
 }
 
-// Fill a picker with the catalog drugs (translated labels) plus "Other…".
+// Fill a picker with the catalog drugs (shown exactly as named in .env) plus "Other…".
 function populatePicker(picker) {
   medicationCatalog.forEach(({ name }) => {
     const option = document.createElement("option");
     option.value = name;
-    option.textContent = dict["med_" + name.toLowerCase()] || name;
+    option.textContent = name;
     picker.append(option);
   });
   const other = document.createElement("option");
@@ -538,24 +533,18 @@ function setText(name, value) {
   if (value) form[name].value = value;
 }
 function prefillMedsFromString(section, str) {
-  if (!str) return;
   const picker = section.querySelector(".med-picker");
   const list = section.querySelector(".med-list");
-  str
-    .split(";")
-    .map((s) => s.trim())
-    .filter(Boolean)
-    .forEach((item) => {
-      const m = item.match(/^(.*?)\s+([\d.]+)mg$/); // "Name 200mg" -> name, dose
-      const name = m ? m[1] : item;
-      const dose = m ? m[2] : "";
-      const option = picker.querySelector(`option[value="${name}"]`);
-      if (option) {
-        addMedicationRow(picker, list, { name, label: option.textContent, dose });
-        setOptionTaken(picker, name, true);
-      } else {
-        addMedicationRow(picker, list, { custom: true, name, dose });
-      }
-    });
+  parseMedications(str).forEach(({ name, dose }) => {
+    const option = picker.querySelector(`option[value="${name}"]`);
+    if (option) {
+      // A catalog drug: a fixed row, and it leaves the dropdown.
+      addMedicationRow(picker, list, { name, label: option.textContent, dose });
+      setOptionTaken(picker, name, true);
+    } else {
+      // Not in the catalog (any more): an editable free-text row.
+      addMedicationRow(picker, list, { custom: true, name, dose });
+    }
+  });
 }
 })();

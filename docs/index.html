@@ -89,7 +89,8 @@
         <h2 class="group-title" data-translate="sec_meds_sleep">Medications (sleep)</h2>
         <p class="hint" data-translate="meds_hint">Pick what you took; the dose in mg is pre-filled and editable.</p>
 
-        <!-- The drug options come from medicationCatalog in app.js — one list feeds both pickers. -->
+        <!-- The drug options come from the bot's URL (?meds=, set via MEDICATIONS in its
+             .env) — the list is personal and never lives in this public page. -->
         <select class="med-picker">
           <option value="" data-translate="med_add" selected>+ Add a medication…</option>
         </select>
@@ -178,7 +179,8 @@
         <p class="hint" data-translate="meds_hint">Pick what you took; the dose in mg is pre-filled and editable.</p>
 
         <!-- Pick a drug from the list; it gets added as a row below (scales to a long list).
-             The drug options come from medicationCatalog in app.js — one list feeds both pickers. -->
+             The drug options come from the bot's URL (?meds=, set via MEDICATIONS in its
+             .env) — the list is personal and never lives in this public page. -->
         <select class="med-picker">
           <option value="" data-translate="med_add" selected>+ Add a medication…</option>
         </select>

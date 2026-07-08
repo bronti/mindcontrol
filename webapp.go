@@ -23,8 +23,10 @@ func cacheVersion() string {
 
 // buildFormURL points at the form in one mode (?form=sleep|day), optionally with a
 // pre-selected date, the dates whose matching part is already filled (so the form
-// can grey them out), and the medications to pre-fill from the most recent entry.
-func buildFormURL(baseURL, part, targetDate string, filled []string, defaultMeds string) string {
+// can grey them out), the medications to pre-fill from the most recent entry, and
+// the catalog of drugs the picker offers. The catalog rides in the URL (?meds=)
+// because it's personal: it lives in the bot's .env, never in the public page.
+func buildFormURL(baseURL, part, targetDate string, filled []string, defaultMeds, catalog string) string {
 	u, err := url.Parse(baseURL)
 	if err != nil {
 		return baseURL
@@ -41,13 +43,17 @@ func buildFormURL(baseURL, part, targetDate string, filled []string, defaultMeds
 	if defaultMeds != "" {
 		q.Set("def_meds", defaultMeds)
 	}
+	if catalog != "" {
+		q.Set("meds", catalog)
+	}
 	u.RawQuery = q.Encode()
 	return u.String()
 }
 
 // buildEditURL opens the form for one day+part to edit: the date is locked, the
 // mode is update|create, and the part's existing values ride along as p_* params.
-func buildEditURL(baseURL, part, date string, row []any, defaultMeds string) string {
+// The drug catalog (?meds=) is always included so the picker works while editing.
+func buildEditURL(baseURL, part, date string, row []any, defaultMeds, catalog string) string {
 	u, err := url.Parse(baseURL)
 	if err != nil {
 		return baseURL
@@ -56,6 +62,9 @@ func buildEditURL(baseURL, part, date string, row []any, defaultMeds string) str
 	q.Set("v", cacheVersion())
 	q.Set("form", part)
 	q.Set("date", date)
+	if catalog != "" {
+		q.Set("meds", catalog)
+	}
 	if row != nil && partFilled(row, part) {
 		q.Set("mode", "update")
 	} else {

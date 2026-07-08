@@ -13,9 +13,10 @@ import (
 // server bundles the bot and its Mini App URL so handlers and keyboards don't
 // have to thread them through every call.
 type server struct {
-	bot       *tgbotapi.BotAPI
-	webAppURL string
-	ownerID   int64 // Telegram user id allowed to use the bot; 0 = open (setup mode)
+	bot         *tgbotapi.BotAPI
+	webAppURL   string
+	ownerID     int64  // Telegram user id allowed to use the bot; 0 = open (setup mode)
+	medications string // the drugs the form offers to pick from (MEDICATIONS in .env)
 }
 
 const isoDate = "2006-01-02"
@@ -214,7 +215,7 @@ func (s *server) dayKeyboard(targetDate string) tgbotapi.ReplyKeyboardMarkup {
 
 // editKeyboard opens the form pre-filled to edit one day+part.
 func (s *server) editKeyboard(part, date string, row []any, defaultMeds string) tgbotapi.ReplyKeyboardMarkup {
-	btn := s.webAppButton(formLabelKey(part), buildEditURL(s.webAppURL, part, date, row, defaultMeds))
+	btn := s.webAppButton(formLabelKey(part), buildEditURL(s.webAppURL, part, date, row, defaultMeds, s.medications))
 	return tgbotapi.NewReplyKeyboard(tgbotapi.NewKeyboardButtonRow(btn))
 }
 
@@ -231,7 +232,7 @@ func (s *server) formButton(rows [][]any, part, targetDate string) tgbotapi.Keyb
 	if medsBefore == "" {
 		medsBefore = time.Now().Format(isoDate)
 	}
-	link := buildFormURL(s.webAppURL, part, targetDate, filled, latestMedicationsRows(rows, part, medsBefore))
+	link := buildFormURL(s.webAppURL, part, targetDate, filled, latestMedicationsRows(rows, part, medsBefore), s.medications)
 	return s.webAppButton(formLabelKey(part), link)
 }
 

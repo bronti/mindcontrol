@@ -43,7 +43,14 @@ func main() {
 	}
 
 	loadSettings()
-	srv := &server{bot: bot, webAppURL: webAppURL, ownerID: ownerID}
+	srv := &server{
+		bot:       bot,
+		webAppURL: webAppURL,
+		ownerID:   ownerID,
+		// The medication list is personal, so it lives in .env — never in the
+		// (public) form page. Same format as the sheet cells: "Name 200mg; Other".
+		medications: os.Getenv("MEDICATIONS"),
+	}
 	go srv.runReminders()
 
 	updates := tgbotapi.NewUpdate(0)

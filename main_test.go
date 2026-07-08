@@ -5,39 +5,43 @@ import (
 	"testing"
 )
 
-func ptr(i int) *int { return &i }
 
-// buildEditURL must carry the mode, the part's values as p_* params, and the date.
+// buildEditURL must carry the mode, the part's values as p_* params, the date,
+// and the drug catalog (?meds=) so the picker works while editing.
 func TestBuildEditURL(t *testing.T) {
-	row := mergeRow(nil, formAnswers{Date: "2026-07-03", State: ptr(7), Menstruation: true}, ownerDay)
-	u := buildEditURL("https://x/", ownerDay, "2026-07-03", row, "")
-	for _, want := range []string{"form=day", "mode=update", "date=2026-07-03", "p_state=7", "p_menstruation=yes"} {
+	row := mergeRow(nil, formAnswers{Date: "2026-07-03", State: new(7), Menstruation: true}, ownerDay)
+	u := buildEditURL("https://x/", ownerDay, "2026-07-03", row, "", "Aspirin 100mg")
+	for _, want := range []string{"form=day", "mode=update", "date=2026-07-03", "p_state=7", "p_menstruation=yes", "meds=Aspirin"} {
 		if !strings.Contains(u, want) {
 			t.Errorf("edit URL %q missing %q", u, want)
 		}
 	}
 	// A day with no entry yet → create mode, no pre-fill params, but the usual
 	// meds still ride along as def_meds.
-	empty := buildEditURL("https://x/", ownerSleep, "2026-07-04", nil, "Lamotrigine 200mg")
+	empty := buildEditURL("https://x/", ownerSleep, "2026-07-04", nil, "Melatonin 3mg", "")
 	if !strings.Contains(empty, "mode=create") || strings.Contains(empty, "p_") {
 		t.Errorf("expected create mode with no p_ params, got %q", empty)
 	}
-	if !strings.Contains(empty, "def_meds=Lamotrigine") {
+	if !strings.Contains(empty, "def_meds=Melatonin") {
 		t.Errorf("expected def_meds pre-fill in create mode, got %q", empty)
+	}
+	if strings.Contains(empty, "&meds=") {
+		t.Errorf("expected no meds param when the catalog is empty, got %q", empty)
 	}
 }
 
-// A normal form open carries the most-recent meds as def_meds, and omits the
-// param entirely when there are none.
-func TestBuildFormURLDefaultMeds(t *testing.T) {
-	u := buildFormURL("https://x/", ownerDay, "", nil, "Lamotrigine 200mg; Olanzapine 3mg")
-	for _, want := range []string{"form=day", "def_meds=Lamotrigine"} {
+// A normal form open carries the drug catalog as ?meds= and the most-recent
+// medications as def_meds; both params are omitted entirely when empty.
+func TestBuildFormURLMedications(t *testing.T) {
+	u := buildFormURL("https://x/", ownerDay, "", nil, "Melatonin 3mg; Aspirin 100mg", "Aspirin 100mg; Paracetamol")
+	for _, want := range []string{"form=day", "def_meds=Melatonin", "meds=Aspirin"} {
 		if !strings.Contains(u, want) {
 			t.Errorf("form URL %q missing %q", u, want)
 		}
 	}
-	if got := buildFormURL("https://x/", ownerSleep, "", nil, ""); strings.Contains(got, "def_meds") {
-		t.Errorf("expected no def_meds when empty, got %q", got)
+	got := buildFormURL("https://x/", ownerSleep, "", nil, "", "")
+	if strings.Contains(got, "meds") { // also catches def_meds
+		t.Errorf("expected no medication params when empty, got %q", got)
 	}
 }
 
@@ -47,7 +51,7 @@ func TestBuildFormURLDefaultMeds(t *testing.T) {
 func TestFilledByPartRows(t *testing.T) {
 	rows := [][]any{
 		mergeRow(nil, formAnswers{Date: "2026-07-01", Bedtime: "23:00"}, ownerSleep), // sleep only
-		mergeRow(nil, formAnswers{Date: "2026-07-02", State: ptr(5)}, ownerDay),      // day only
+		mergeRow(nil, formAnswers{Date: "2026-07-02", State: new(5)}, ownerDay),      // day only
 	}
 	sleep, day := filledByPartRows(rows)
 	if len(sleep) != 1 || sleep[0] != "2026-07-01" {
@@ -60,8 +64,8 @@ func TestFilledByPartRows(t *testing.T) {
 
 func TestCalendarDataRows(t *testing.T) {
 	rows := [][]any{
-		mergeRow(nil, formAnswers{Date: "2026-07-02", State: ptr(7)}, ownerDay),
-		mergeRow(nil, formAnswers{Date: "2026-07-01", Rested: ptr(3)}, ownerSleep),
+		mergeRow(nil, formAnswers{Date: "2026-07-02", State: new(7)}, ownerDay),
+		mergeRow(nil, formAnswers{Date: "2026-07-01", Rested: new(3)}, ownerSleep),
 	}
 	// Sorted chronologically; sleep=top (rating), day=bottom, "-" for the missing half.
 	if got, want := calendarDataRows(rows), "20260701.3.-_20260702.-.7"; got != want {
@@ -72,16 +76,16 @@ func TestCalendarDataRows(t *testing.T) {
 func TestLatestMedicationsRows(t *testing.T) {
 	med := func(name, dose string) []medication { return []medication{{Name: name, Dose: dose}} }
 	rows := [][]any{
-		mergeRow(nil, formAnswers{Date: "2026-07-01", Medications: med("Lamotrigine", "200")}, ownerDay),
-		mergeRow(nil, formAnswers{Date: "2026-07-05", Medications: med("Olanzapine", "5")}, ownerDay),
-		mergeRow(nil, formAnswers{Date: "2026-07-03", Medications: med("Fluoxetine", "25")}, ownerDay),
+		mergeRow(nil, formAnswers{Date: "2026-07-01", Medications: med("Aspirin", "100")}, ownerDay),
+		mergeRow(nil, formAnswers{Date: "2026-07-05", Medications: med("Melatonin", "5")}, ownerDay),
+		mergeRow(nil, formAnswers{Date: "2026-07-03", Medications: med("Paracetamol", "500")}, ownerDay),
 	}
-	if got := latestMedicationsRows(rows, ownerDay, "2026-07-10"); got != "Olanzapine 5mg" {
-		t.Errorf("latest before 07-10: got %q, want Olanzapine 5mg", got)
+	if got := latestMedicationsRows(rows, ownerDay, "2026-07-10"); got != "Melatonin 5mg" {
+		t.Errorf("latest before 07-10: got %q, want Melatonin 5mg", got)
 	}
 	// 07-05 is excluded (>= before), so the newest remaining is 07-03.
-	if got := latestMedicationsRows(rows, ownerDay, "2026-07-04"); got != "Fluoxetine 25mg" {
-		t.Errorf("latest before 07-04: got %q, want Fluoxetine 25mg", got)
+	if got := latestMedicationsRows(rows, ownerDay, "2026-07-04"); got != "Paracetamol 500mg" {
+		t.Errorf("latest before 07-04: got %q, want Paracetamol 500mg", got)
 	}
 	// These rows have no sleep medications.
 	if got := latestMedicationsRows(rows, ownerSleep, "2026-07-10"); got != "" {
@@ -106,7 +110,7 @@ func TestMergeSleepThenDay(t *testing.T) {
 		LastModified: "2026-07-08 08:00:00",
 		Bedtime:      "23:30",
 		Wake:         "07:00",
-		Rested:       ptr(3),
+		Rested:       new(3),
 		Dreams:       "nightmares",
 		DreamNote:    "chased by a dog",
 	}
@@ -131,7 +135,7 @@ func TestMergeSleepThenDay(t *testing.T) {
 	day := formAnswers{
 		Date:         "2026-07-08",
 		LastModified: "2026-07-08 21:30:00",
-		State:        ptr(7),
+		State:        new(7),
 		Headache:     true,
 		Smoking:      true,
 		Note:         "long day",
@@ -187,7 +191,7 @@ func TestNumCellEmptyWhenNil(t *testing.T) {
 	if got := numCell(nil); got != "" {
 		t.Errorf("expected empty for an untouched slider, got %v", got)
 	}
-	if got := numCell(ptr(0)); got != 0 {
+	if got := numCell(new(0)); got != 0 {
 		t.Errorf("expected 0 for a touched-to-zero slider, got %v", got)
 	}
 }
