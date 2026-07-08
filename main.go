@@ -9,6 +9,11 @@ import (
 	"github.com/joho/godotenv"
 )
 
+// sheetTab is the tab (worksheet) the bot reads and writes in the spreadsheet.
+// Change it here if you rename the tab; every Sheets range is built from it (see
+// tabRange in sheets.go). It's single-quoted in ranges because of the hyphen.
+const sheetTab = "Makhi-Bot"
+
 func main() {
 	_ = godotenv.Load() // .env holds BOT_TOKEN / WEB_APP_URL / BOT_LANGUAGE (gitignored)
 

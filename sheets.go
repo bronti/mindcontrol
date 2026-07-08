@@ -13,8 +13,12 @@ import (
 // ID of the Google Sheet (from the URL, between /d/ and /edit).
 const spreadsheetID = "1bpCNYzsXwgHFLL4ylm3g3Smsb140kMUYKx2zcViEZAw"
 
-// The tab (worksheet) the bot writes to. Quoted because of the hyphen in the name.
-const sheetRange = "'Makhi-Bot'!A1"
+// tabRange qualifies an A1 range with the tab name, e.g. tabRange("A2:X") ->
+// "'Makhi-Bot'!A2:X". The tab name (sheetTab, in main.go) is single-quoted
+// because it contains a hyphen. Change the tab name there, not here.
+func tabRange(a1 string) string {
+	return fmt.Sprintf("'%s'!%s", sheetTab, a1)
+}
 
 // appendRow adds a single row to the end of the Makhi-Bot tab.
 // Existing data is left untouched — this only appends at the end.
@@ -36,7 +40,7 @@ func appendRow(values ...interface{}) error {
 	// RAW (not USER_ENTERED): store values exactly as given, so date strings stay
 	// text that round-trips unchanged and don't get reformatted by the sheet locale.
 	_, err = srv.Spreadsheets.Values.
-		Append(spreadsheetID, sheetRange, row).
+		Append(spreadsheetID, tabRange("A1"), row).
 		ValueInputOption("RAW").
 		Do()
 	if err != nil {
@@ -52,7 +56,7 @@ func lastColumnLetter() string {
 }
 
 func dataRange() string {
-	return "'Makhi-Bot'!A2:" + lastColumnLetter()
+	return tabRange("A2:" + lastColumnLetter())
 }
 
 // readDataRows reads every data row (below the header), with numbers returned as
@@ -95,7 +99,7 @@ func updateRow(rowNumber int, values []interface{}) error {
 	if err != nil {
 		return fmt.Errorf("connecting to Google Sheets: %w", err)
 	}
-	rng := fmt.Sprintf("'Makhi-Bot'!A%d:%s%d", rowNumber, lastColumnLetter(), rowNumber)
+	rng := tabRange(fmt.Sprintf("A%d:%s%d", rowNumber, lastColumnLetter(), rowNumber))
 	_, err = srv.Spreadsheets.Values.
 		Update(spreadsheetID, rng, &sheets.ValueRange{Values: [][]interface{}{values}}).
 		ValueInputOption("RAW").
@@ -239,7 +243,7 @@ func syncHeader(header []interface{}) error {
 		return fmt.Errorf("connecting to Google Sheets: %w", err)
 	}
 
-	rng := fmt.Sprintf("'Makhi-Bot'!A1:%s1", lastColumnLetter())
+	rng := tabRange(fmt.Sprintf("A1:%s1", lastColumnLetter()))
 	_, err = srv.Spreadsheets.Values.
 		Update(spreadsheetID, rng, &sheets.ValueRange{Values: [][]interface{}{header}}).
 		ValueInputOption("RAW").
