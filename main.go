@@ -31,18 +31,18 @@ type formAnswers struct {
 	Bedtime          string       `json:"bedtime"`
 	Wake             string       `json:"wake"`
 	SleepHours       *float64     `json:"sleep_hours"`
-	SleepQuality     int          `json:"sleep_quality"`
+	SleepQuality     *int         `json:"sleep_quality"`
 	Dreams           string       `json:"dreams"`
 	DreamNote        string       `json:"dream_note"`
 	SleepMedications []medication `json:"sleep_medications"`
-	State            int          `json:"state"`
-	Anxiety          int          `json:"anxiety"`
-	Irritability     int          `json:"irritability"`
-	Libido           int          `json:"libido"`
-	Drowsiness       int          `json:"drowsiness"`
-	Appetite         int          `json:"appetite"`
-	Energy           int          `json:"energy"`
-	AteWell          int          `json:"ate_well"`
+	State            *int         `json:"state"`
+	Anxiety          *int         `json:"anxiety"`
+	Irritability     *int         `json:"irritability"`
+	Libido           *int         `json:"libido"`
+	Drowsiness       *int         `json:"drowsiness"`
+	Appetite         *int         `json:"appetite"`
+	Energy           *int         `json:"energy"`
+	AteWell          *int         `json:"ate_well"`
 	Menstruation     bool         `json:"menstruation"`
 	Sex              bool         `json:"sex"`
 	Masturbation     bool         `json:"masturbation"`
@@ -73,18 +73,18 @@ var columns = []struct {
 	{"Fell asleep", ownerSleep, func(a formAnswers) interface{} { return a.Bedtime }},
 	{"Woke up", ownerSleep, func(a formAnswers) interface{} { return a.Wake }},
 	{"Sleep hours", ownerSleep, func(a formAnswers) interface{} { return sleepCell(a.SleepHours) }},
-	{"Sleep quality", ownerSleep, func(a formAnswers) interface{} { return a.SleepQuality }},
+	{"Sleep quality", ownerSleep, func(a formAnswers) interface{} { return numCell(a.SleepQuality) }},
 	{"Dreams", ownerSleep, func(a formAnswers) interface{} { return a.Dreams }},
 	{"Dream notes", ownerSleep, func(a formAnswers) interface{} { return dreamNote(a) }},
 	{"Sleep medications", ownerSleep, func(a formAnswers) interface{} { return formatMedications(a.SleepMedications) }},
-	{"Overall state", ownerDay, func(a formAnswers) interface{} { return a.State }},
-	{"Anxiety", ownerDay, func(a formAnswers) interface{} { return a.Anxiety }},
-	{"Irritability", ownerDay, func(a formAnswers) interface{} { return a.Irritability }},
-	{"Libido", ownerDay, func(a formAnswers) interface{} { return a.Libido }},
-	{"Drowsiness", ownerDay, func(a formAnswers) interface{} { return a.Drowsiness }},
-	{"Appetite", ownerDay, func(a formAnswers) interface{} { return a.Appetite }},
-	{"Energy", ownerDay, func(a formAnswers) interface{} { return a.Energy }},
-	{"Ate well", ownerDay, func(a formAnswers) interface{} { return a.AteWell }},
+	{"Overall state", ownerDay, func(a formAnswers) interface{} { return numCell(a.State) }},
+	{"Anxiety", ownerDay, func(a formAnswers) interface{} { return numCell(a.Anxiety) }},
+	{"Irritability", ownerDay, func(a formAnswers) interface{} { return numCell(a.Irritability) }},
+	{"Libido", ownerDay, func(a formAnswers) interface{} { return numCell(a.Libido) }},
+	{"Drowsiness", ownerDay, func(a formAnswers) interface{} { return numCell(a.Drowsiness) }},
+	{"Appetite", ownerDay, func(a formAnswers) interface{} { return numCell(a.Appetite) }},
+	{"Energy", ownerDay, func(a formAnswers) interface{} { return numCell(a.Energy) }},
+	{"Ate well", ownerDay, func(a formAnswers) interface{} { return numCell(a.AteWell) }},
 	{"Menstruation", ownerDay, func(a formAnswers) interface{} { return yesNo(a.Menstruation) }},
 	{"Sex", ownerDay, func(a formAnswers) interface{} { return yesNo(a.Sex) }},
 	{"Masturbation", ownerDay, func(a formAnswers) interface{} { return yesNo(a.Masturbation) }},
@@ -161,6 +161,14 @@ func sleepCell(hours *float64) interface{} {
 		return ""
 	}
 	return *hours
+}
+
+// numCell renders a slider value, or "" if the slider was never touched (nil).
+func numCell(n *int) interface{} {
+	if n == nil {
+		return ""
+	}
+	return *n
 }
 
 // formatMedications turns the medication list into a single readable cell.

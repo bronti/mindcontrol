@@ -2,6 +2,8 @@ package main
 
 import "testing"
 
+func ptr(i int) *int { return &i }
+
 // colIndex finds a column by its header (so tests don't break on a reorder).
 func colIndex(header string) int {
 	for i, c := range columns {
@@ -29,7 +31,7 @@ func TestMergeSleepThenDay(t *testing.T) {
 		FilledAt:     "2026-07-08 08:00:00",
 		Bedtime:      "23:30",
 		Wake:         "07:00",
-		SleepQuality: 3,
+		SleepQuality: ptr(3),
 		Dreams:       "nightmares",
 		DreamNote:    "chased by a dog",
 	}
@@ -54,7 +56,7 @@ func TestMergeSleepThenDay(t *testing.T) {
 	day := formAnswers{
 		Date:     "2026-07-08",
 		FilledAt: "2026-07-08 21:30:00",
-		State:    7,
+		State:    ptr(7),
 		Headache: true,
 		Smoking:  true,
 		Note:     "long day",
@@ -88,6 +90,16 @@ func TestDreamNoteDroppedWhenNone(t *testing.T) {
 	a.Dreams = "dreams"
 	if got := dreamNote(a); got != "typed then changed my mind" {
 		t.Errorf("expected dream note kept for dreams, got %q", got)
+	}
+}
+
+// An untouched slider (nil) must be blank, but a touched 0 is a real answer.
+func TestNumCellEmptyWhenNil(t *testing.T) {
+	if got := numCell(nil); got != "" {
+		t.Errorf("expected empty for an untouched slider, got %v", got)
+	}
+	if got := numCell(ptr(0)); got != 0 {
+		t.Errorf("expected 0 for a touched-to-zero slider, got %v", got)
 	}
 }
 

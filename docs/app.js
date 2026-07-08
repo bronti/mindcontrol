@@ -196,13 +196,23 @@ function checkDate() {
 dateInput.addEventListener("input", checkDate);
 checkDate();
 
-// ---- Sliders: show the current value next to each label ----
+// ---- Sliders: start empty & grey; a value is recorded only once you move one ----
 form.querySelectorAll('input[type="range"]').forEach((range) => {
-  const out = range.closest(".slider").querySelector("output");
-  const sync = () => { out.textContent = range.value; };
-  range.addEventListener("input", sync);
-  sync();
+  const slider = range.closest(".slider");
+  const out = slider.querySelector("output");
+  slider.classList.add("untouched"); // grey, no value yet
+  out.textContent = "—";
+  range.addEventListener("input", () => {
+    slider.classList.remove("untouched");
+    out.textContent = range.value;
+  });
 });
+
+// A slider's answer: null until it has been touched, then its number.
+function sliderValue(name) {
+  const range = form[name];
+  return range.closest(".slider").classList.contains("untouched") ? null : Number(range.value);
+}
 
 // ---- Dream note: show the text field only when there were some kind of dreams ----
 // The textarea keeps its text when hidden, so switching between the options never
@@ -383,20 +393,20 @@ form.addEventListener("submit", (event) => {
     bedtime: bedtime.value,
     wake: wake.value,
     sleep_hours: minutes === null ? null : Math.round((minutes / 60) * 100) / 100,
-    sleep_quality: Number(form.sleep_quality.value),
+    sleep_quality: sliderValue("sleep_quality"),
     dreams: form.dreams.value,
     // Only send the dream text when there were some kind of dreams — if the user
     // typed something then switched back to "none", it must not be saved.
     dream_note: dreamsWithContent.includes(form.dreams.value) ? form.dream_note.value : "",
     sleep_medications: collectMedications(sleepMedList),
-    state: Number(form.state.value),
-    anxiety: Number(form.anxiety.value),
-    irritability: Number(form.irritability.value),
-    libido: Number(form.libido.value),
-    drowsiness: Number(form.drowsiness.value),
-    appetite: Number(form.appetite.value),
-    energy: Number(form.energy.value),
-    ate_well: Number(form.ate_well.value),
+    state: sliderValue("state"),
+    anxiety: sliderValue("anxiety"),
+    irritability: sliderValue("irritability"),
+    libido: sliderValue("libido"),
+    drowsiness: sliderValue("drowsiness"),
+    appetite: sliderValue("appetite"),
+    energy: sliderValue("energy"),
+    ate_well: sliderValue("ate_well"),
     menstruation: form.menstruation.value === "yes",
     sex: form.sex.value === "yes",
     masturbation: form.masturbation.value === "yes",

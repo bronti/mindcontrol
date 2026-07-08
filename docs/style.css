@@ -153,6 +153,16 @@ input[type="range"] {
   accent-color: var(--accent);
 }
 
+/* Untouched slider: grey and no value shown, until the user moves it. */
+.slider.untouched input[type="range"] {
+  accent-color: var(--hint);
+  opacity: 0.7;
+}
+.slider.untouched output {
+  color: var(--hint);
+  font-weight: 400;
+}
+
 /* ---- Segmented control (dreams, yes/no) ---- */
 .segmented {
   display: flex;
