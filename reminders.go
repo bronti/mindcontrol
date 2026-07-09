@@ -8,29 +8,38 @@ import (
 	tgbotapi "github.com/OvyFlash/telegram-bot-api"
 )
 
-// runReminders checks the local clock every ~20s and fires at most once per day
-// per reminder. It uses the machine's local time, so reminders only happen while
-// the bot (and this computer) are running.
+// reminderCheckInterval is how often the loop wakes to see whether a reminder is
+// due. A reminder fires at the first check at or after its time, so a coarse
+// interval just means it can be up to this late — fine for a daily nudge, and
+// easy on a small always-on VM.
+const reminderCheckInterval = 10 * time.Minute
+
+// runReminders wakes every reminderCheckInterval and fires each reminder at most
+// once per day — at the first check at or after its configured HH:MM. It uses the
+// machine's local time, so reminders only happen while the bot (and this computer)
+// are running.
 func (s *server) runReminders() {
 	var lastEvening, lastAfternoon string // the date each reminder last fired on
 
 	for {
-		now := time.Now()
+		now := s.now()
 		hhmm := now.Format("15:04")
 		today := now.Format(isoDate)
 		cfg := getSettings()
 
 		if cfg.ChatID != 0 {
-			if hhmm == cfg.EveningReminder && lastEvening != today {
+			// HH:MM is zero-padded, so a plain string >= compares chronologically:
+			// fire once we're at or past the reminder time and haven't fired today.
+			if hhmm >= cfg.EveningReminder && lastEvening != today {
 				lastEvening = today
 				s.remindToday(cfg.ChatID, today)
 			}
-			if hhmm == cfg.AfternoonReminder && lastAfternoon != today {
+			if hhmm >= cfg.AfternoonReminder && lastAfternoon != today {
 				lastAfternoon = today
 				s.remindYesterday(cfg.ChatID, now)
 			}
 		}
-		time.Sleep(20 * time.Second)
+		time.Sleep(reminderCheckInterval)
 	}
 }
 
