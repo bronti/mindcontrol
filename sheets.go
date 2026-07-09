@@ -15,22 +15,26 @@ import (
 // ID of the Google Sheet (from the URL, between /d/ and /edit).
 const spreadsheetID = "1bpCNYzsXwgHFLL4ylm3g3Smsb140kMUYKx2zcViEZAw"
 
-// The service account's key, downloaded from Google Cloud (gitignored).
-const credentialsFile = "google-cloud-key.json"
-
-// The Sheets client is created once and reused: building it reads the credentials
-// file and sets up an HTTP client, which we don't want to redo on every call.
+// The Sheets client is created once and reused: building it sets up authentication
+// and an HTTP client, which we don't want to redo on every call.
 var (
 	sheetsOnce sync.Once
 	sheetsSvc  *sheets.Service
 	sheetsErr  error
 )
 
+// service authenticates with Application Default Credentials, so the same code
+// works in both places we run — DetectDefault looks for a key file named by the
+// GOOGLE_APPLICATION_CREDENTIALS environment variable, then for a service account
+// attached to the host:
+//   - Locally: GOOGLE_APPLICATION_CREDENTIALS in .env points at the downloaded
+//     service-account key (godotenv loads it before we get here).
+//   - On a Google Cloud VM: leave that variable unset — it falls back to the
+//     service account attached to the VM, so no key file lives on the server.
 func service() (*sheets.Service, error) {
 	sheetsOnce.Do(func() {
 		creds, err := credentials.DetectDefault(&credentials.DetectOptions{
-			CredentialsFile: credentialsFile,
-			Scopes:          []string{sheets.SpreadsheetsScope},
+			Scopes: []string{sheets.SpreadsheetsScope},
 		})
 		if err != nil {
 			sheetsErr = err
