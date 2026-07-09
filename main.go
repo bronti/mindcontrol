@@ -50,6 +50,9 @@ func main() {
 		// The medication list is personal, so it lives in .env — never in the
 		// (public) form page. Same format as the sheet cells: "Name 200mg; Other".
 		medications: os.Getenv("MEDICATIONS"),
+		// Reminders and dates follow this time zone, not the host clock (a cloud
+		// VM is usually UTC). See loadLocation.
+		location: loadLocation(os.Getenv("TIMEZONE")),
 	}
 	go srv.runReminders()
 

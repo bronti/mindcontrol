@@ -15,8 +15,9 @@ import (
 type server struct {
 	bot         *tgbotapi.BotAPI
 	webAppURL   string
-	ownerID     int64  // Telegram user id allowed to use the bot; 0 = open (setup mode)
-	medications string // the drugs the form offers to pick from (MEDICATIONS in .env)
+	ownerID     int64          // Telegram user id allowed to use the bot; 0 = open (setup mode)
+	medications string         // the drugs the form offers to pick from (MEDICATIONS in .env)
+	location    *time.Location // time zone for reminders and dates (TIMEZONE in .env)
 }
 
 const isoDate = "2006-01-02"
@@ -161,7 +162,7 @@ func (s *server) handleFormSubmission(message *tgbotapi.Message) {
 		return
 	}
 
-	a.LastModified = time.Now().Format("2006-01-02 15:04:05")
+	a.LastModified = s.now().Format("2006-01-02 15:04:05")
 	merged := mergeRow(existing, a, a.FormType)
 	if rowNum != 0 {
 		err = updateRow(rowNum, merged)
@@ -230,7 +231,7 @@ func (s *server) formButton(rows [][]any, part, targetDate string) tgbotapi.Keyb
 	}
 	medsBefore := targetDate
 	if medsBefore == "" {
-		medsBefore = time.Now().Format(isoDate)
+		medsBefore = s.now().Format(isoDate)
 	}
 	link := buildFormURL(s.webAppURL, part, targetDate, filled, latestMedicationsRows(rows, part, medsBefore), s.medications)
 	return s.webAppButton(formLabelKey(part), link)
