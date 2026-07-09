@@ -23,14 +23,20 @@ var (
 	sheetsErr  error
 )
 
-// service authenticates with Application Default Credentials, so the same code
-// works in both places we run — DetectDefault looks for a key file named by the
-// GOOGLE_APPLICATION_CREDENTIALS environment variable, then for a service account
-// attached to the host:
-//   - Locally: GOOGLE_APPLICATION_CREDENTIALS in .env points at the downloaded
-//     service-account key (godotenv loads it before we get here).
-//   - On a Google Cloud VM: leave that variable unset — it falls back to the
-//     service account attached to the VM, so no key file lives on the server.
+// service authenticates with Application Default Credentials. DetectDefault looks
+// for a key file named by the GOOGLE_APPLICATION_CREDENTIALS environment variable
+// first, then falls back to a service account attached to the host (e.g. a GCE VM).
+//
+// We rely on the KEY FILE in BOTH places we run — set GOOGLE_APPLICATION_CREDENTIALS
+// in .env locally AND on the Cloud VM (godotenv loads it before we get here).
+//
+// Why not the VM's attached service account? Sheets is a Google *Workspace* API,
+// and its tokens must carry the `spreadsheets` (or `drive`) scope. A GCE VM's
+// attached-SA token uses the instance's access scopes, and the "full access to all
+// Cloud APIs" preset grants `cloud-platform` — which covers Google *Cloud* APIs but
+// NOT Workspace APIs like Sheets. So the attached-SA path returns
+// ACCESS_TOKEN_SCOPE_INSUFFICIENT no matter the scope preset. A key file mints a
+// token with exactly the scope requested below, which Sheets accepts.
 func service() (*sheets.Service, error) {
 	sheetsOnce.Do(func() {
 		creds, err := credentials.DetectDefault(&credentials.DetectOptions{

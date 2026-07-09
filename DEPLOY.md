@@ -4,9 +4,17 @@ This is the step-by-step recipe to run the bot **24/7** on a Google Cloud
 **`e2-micro` Always Free** VM. It assumes the VM already exists (see the
 free-tier settings at the bottom if you still need to create it).
 
-The VM authenticates to Google Sheets with **no key file** — it uses the
-**service account attached to the VM** (Application Default Credentials). So
-you never copy `google-cloud-key.json` to the server.
+The VM authenticates to Google Sheets with the **service-account key file**
+(`google-cloud-key.json`) — the same way the bot runs locally. You copy that key
+to the server (step 5b) and point `GOOGLE_APPLICATION_CREDENTIALS` at it.
+
+> **Why not use the service account _attached_ to the VM (keyless)?** Because it
+> can't reach Sheets. A GCE VM's attached-SA token is scoped by the instance's
+> access-scope setting; the "Allow full access to all Cloud APIs" preset grants
+> `cloud-platform`, which covers Google **Cloud** APIs but **not** Google
+> **Workspace** APIs like Sheets. So the keyless path always fails with
+> `ACCESS_TOKEN_SCOPE_INSUFFICIENT`, regardless of the scope preset. A key file
+> mints a token with the exact `spreadsheets` scope, which Sheets accepts.
 
 ---
 
@@ -15,10 +23,10 @@ you never copy `google-cloud-key.json` to the server.
 1. **Billing** → link a billing account (add a card). A correctly configured
    `e2-micro` still bills **$0**; billing just has to be *enabled*.
 2. **Enable the "Compute Engine API"** (the Sheets API is already on).
-3. When creating the VM, under **Identity and API access → Service account**,
-   pick your **existing Sheets service account** (the one already sharing the
-   sheet) and set **Access scopes → "Allow full access to all Cloud APIs"**.
-   This is what makes the keyless auth work.
+3. Have your **`google-cloud-key.json`** (the service-account key that already
+   shares the sheet) ready on your local machine — you'll upload it in step 5b.
+   You do **not** need to attach a service account or set special access scopes
+   on the VM: the bot authenticates with the key file, not the VM's identity.
 
 ---
 
@@ -75,9 +83,10 @@ first, then clone.)
 
 ---
 
-## 5. Upload and edit `.env` (the only secret on the server)
+## 5. Upload the secrets (`.env` + the key file)
 
-`.env` is gitignored, so cloning does NOT bring it — you must add it by hand.
+Both `.env` and `google-cloud-key.json` are gitignored, so cloning does NOT bring
+them — you must add both by hand.
 
 1. In the browser SSH window, click the **gear / upload** icon (top right) and
    upload your local **`.env`**. It lands in your home dir (e.g. `~/.env`).
@@ -91,17 +100,30 @@ first, then clone.)
    ```bash
    sudo -u makhi nano /opt/makhi-bot/.env
    ```
-   - **Comment out (or delete) the `GOOGLE_APPLICATION_CREDENTIALS` line.**
-     On the VM, auth falls back to the attached service account. If this line
-     is present, the bot looks for a key file that isn't there and fails.
+   - Point **`GOOGLE_APPLICATION_CREDENTIALS`** at the key file's **absolute**
+     path on the VM (uploaded in step 5b). No `#`, no quotes, no spaces:
      ```
-     # GOOGLE_APPLICATION_CREDENTIALS=google-cloud-key.json
+     GOOGLE_APPLICATION_CREDENTIALS=/opt/makhi-bot/google-cloud-key.json
      ```
    - Set **`TIMEZONE=Asia/Tbilisi`** so reminders (21:00 / 14:00) fire on
      your local clock, not the VM's UTC.
    - Confirm `BOT_TOKEN`, `OWNER_ID`, `WEB_APP_URL`, `MEDICATIONS` are correct.
 
-   Do **NOT** upload `google-cloud-key.json` — no key file belongs on the VM.
+### 5b. Upload the service-account key file
+
+The bot reads/writes the sheet with this key (see the box at the top for why the
+VM's own identity can't). Upload it the same way as `.env`:
+
+1. In the browser SSH window, use the **gear / upload** icon to upload your local
+   **`google-cloud-key.json`**. It lands in your home dir (e.g. `~/google-cloud-key.json`).
+2. Move it into the app folder, lock it down, and confirm it's the right account:
+   ```bash
+   sudo mv ~/google-cloud-key.json /opt/makhi-bot/google-cloud-key.json
+   sudo chown makhi:makhi /opt/makhi-bot/google-cloud-key.json
+   sudo chmod 600 /opt/makhi-bot/google-cloud-key.json
+   # sanity check — this must be the SA that shares the sheet:
+   sudo grep -o '"client_email": *"[^"]*"' /opt/makhi-bot/google-cloud-key.json
+   ```
 
 ---
 
@@ -187,7 +209,7 @@ Get any one of these wrong and the VM stops being free:
 | Boot disk      | **Standard** persistent disk, ≤ 30 GB (10 is fine) |
 | Network tier   | **Standard** (not Premium)                         |
 | Count          | only **1** such VM per billing account             |
-| Service account| your existing **Sheets** service account, full API access scope |
+| Service account| not needed for Sheets — the bot uses the key file (step 5b) |
 
 No firewall rule / "Allow HTTP(S)" is needed — the bot only makes **outbound**
 connections (Telegram long-polling + Sheets); nothing connects *to* the VM
