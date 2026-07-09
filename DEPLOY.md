@@ -53,10 +53,12 @@ go version    # should print go1.26.4
 ## 3. Create the app folder and a dedicated user
 
 The bot runs as its own unprivileged user `makhi` (not root, not your login) —
-that's what the systemd unit expects.
+that's what the systemd unit expects. Create it WITHOUT `--create-home` so the
+folder stays empty for the clone in the next step (git refuses to clone into a
+non-empty directory):
 
 ```bash
-sudo useradd --system --create-home --home-dir /opt/makhi-bot --shell /usr/sbin/nologin makhi
+sudo useradd --system --home-dir /opt/makhi-bot --shell /usr/sbin/nologin makhi
 ```
 
 ---
@@ -67,6 +69,9 @@ sudo useradd --system --create-home --home-dir /opt/makhi-bot --shell /usr/sbin/
 sudo git clone https://github.com/bronti/mindcontrol.git /opt/makhi-bot
 sudo chown -R makhi:makhi /opt/makhi-bot
 ```
+
+(If the folder already exists and git refuses, `sudo rm -rf /opt/makhi-bot`
+first, then clone.)
 
 ---
 
