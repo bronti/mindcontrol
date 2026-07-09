@@ -1,0 +1,41 @@
+[Unit]
+# systemd service unit for the Makhi-Bot Telegram bot.
+# See DEPLOY.md for how to install and enable this on the Google Cloud VM.
+Description=Makhi-Bot Telegram daily-tracker bot
+# Only start once the network is up (the bot long-polls Telegram + writes to Sheets).
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+
+# Dedicated non-root user created in DEPLOY.md. The bot needs no privileges.
+User=makhi
+Group=makhi
+
+# Folder that holds the cloned repo. The bot reads .env from its working directory,
+# so WorkingDirectory MUST be where .env lives.
+WorkingDirectory=/opt/makhi-bot
+ExecStart=/opt/makhi-bot/makhi-bot
+
+# Restart the bot if it ever exits (crash, unhandled panic, Telegram hiccup).
+Restart=always
+RestartSec=5
+
+# Send stdout/stderr to the systemd journal (view with: journalctl -u makhi-bot -f).
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=makhi-bot
+
+# --- Light hardening (optional but cheap; safe for this bot) ---
+# The bot only needs to read its own folder and reach the network.
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+# settings.json is written at runtime, so the working dir must stay writable:
+ReadWritePaths=/opt/makhi-bot
+
+[Install]
+# Start automatically on boot (so a VM reboot brings the bot back by itself).
+WantedBy=multi-user.target
