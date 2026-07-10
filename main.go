@@ -75,8 +75,11 @@ func main() {
 	// Sync the header row into row 1 — but if the sheet already has a *different*
 	// non-empty header, don't overwrite it. Instead the bot messages the owner the
 	// expected header and pauses until they fix the table and press the button.
+	//
+	// A genuine sync failure (can't read or write the header at all) is fatal: we
+	// stop rather than run against a sheet whose columns we couldn't verify.
 	if err := srv.syncOrPauseForHeader(); err != nil {
-		log.Printf(translate("header_sync_failed"), err)
+		log.Fatalf(translate("header_sync_failed"), err)
 	}
 
 	go srv.runReminders()
