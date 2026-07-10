@@ -82,14 +82,14 @@ func (s *server) handleCallback(cb *tgbotapi.CallbackQuery) {
 		return // already running — nothing to do
 	}
 	if err := syncHeader(headerRow()); err != nil {
-		log.Printf("could not sync the header after a fix: %v", err)
+		log.Printf(translate("header_fix_sync_failed"), err)
 		if cb.Message != nil {
 			s.reply(cb.Message.Chat.ID, translate("form_error"))
 		}
 		return
 	}
 	s.paused.Store(false)
-	log.Print("header synced after a manual fix — resuming normal work")
+	log.Print(translate("header_resumed_log"))
 	if cb.Message != nil {
 		s.reply(cb.Message.Chat.ID, translate("header_synced"))
 	}
@@ -107,7 +107,7 @@ func (s *server) syncOrPauseForHeader() error {
 	}
 	want := headerRow()
 	if !headerEmpty(existing) && !headerEqual(existing, want) {
-		log.Print("sheet header differs from the schema — pausing until the owner fixes the table")
+		log.Print(translate("header_mismatch_log"))
 		s.pauseForHeaderMismatch(want)
 		return nil
 	}
@@ -127,8 +127,7 @@ func (s *server) pauseForHeaderMismatch(newHeader []any) {
 		chatID = s.ownerID
 	}
 	if chatID == 0 {
-		log.Print("header mismatch, but there's no chat to notify yet — message the bot " +
-			"once, then fix the header and restart")
+		log.Print(translate("header_no_chat_log"))
 		return
 	}
 

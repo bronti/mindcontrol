@@ -76,7 +76,7 @@ func main() {
 	// non-empty header, don't overwrite it. Instead the bot messages the owner the
 	// expected header and pauses until they fix the table and press the button.
 	if err := srv.syncOrPauseForHeader(); err != nil {
-		log.Printf("could not sync the header row: %v", err)
+		log.Printf(translate("header_sync_failed"), err)
 	}
 
 	go srv.runReminders()
