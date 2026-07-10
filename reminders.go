@@ -22,6 +22,13 @@ func (s *server) runReminders() {
 	var lastEvening, lastAfternoon string // the date each reminder last fired on
 
 	for {
+		// Stay quiet while paused for a header mismatch — same reason the update
+		// loop ignores traffic: the sheet's columns don't match the schema yet.
+		if s.paused.Load() {
+			time.Sleep(reminderCheckInterval)
+			continue
+		}
+
 		now := s.now()
 		hhmm := now.Format("15:04")
 		today := now.Format(isoDate)

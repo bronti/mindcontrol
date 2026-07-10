@@ -37,6 +37,10 @@ var messages = map[string]map[string]string{
 		"settings_bad_time": "That doesn't look like a time. Use HH:MM, e.g. 21:00.",
 		"settings_saved":    "Saved ✅ New time: %s",
 		"not_authorized":    "⛔ Sorry, this is a private bot — it only works for its owner.",
+		"header_mismatch":   "⚠️ The sheet's header row no longer matches my columns, so I've paused — I won't save anything or send reminders until it's fixed (otherwise data would land in the wrong columns).\n\nPlease set the Makhi-Bot tab's header (row 1) to exactly this, then tap the button:\n\n%s",
+		"header_fix_button": "✅ The table is fixed",
+		"header_synced":     "✅ Header updated — I'm working again.",
+		"header_paused":     "⏸ I'm paused until the header is fixed. Update row 1 of the Makhi-Bot tab, then tap “✅ The table is fixed”.",
 	},
 	"ru": {
 		"start":             "Привет! Я Makhi-Bot 🤖\nНажми кнопку ниже, чтобы открыть форму дня, или /settings — настроить напоминания.",
@@ -61,6 +65,10 @@ var messages = map[string]map[string]string{
 		"settings_bad_time": "Это не похоже на время. Используй ЧЧ:ММ, напр. 21:00.",
 		"settings_saved":    "Сохранил ✅ Новое время: %s",
 		"not_authorized":    "⛔ Извините, это личный бот — он работает только для владельца.",
+		"header_mismatch":   "⚠️ Заголовок таблицы больше не совпадает с моими колонками, поэтому я поставил себя на паузу — ничего не сохраняю и не шлю напоминания, пока это не исправлено (иначе данные попадут не в те колонки).\n\nСделай строку заголовков (строка 1) на вкладке Makhi-Bot точно такой, затем нажми кнопку:\n\n%s",
+		"header_fix_button": "✅ Таблица исправлена",
+		"header_synced":     "✅ Заголовок обновлён — снова работаю.",
+		"header_paused":     "⏸ Я на паузе, пока не исправлен заголовок. Обнови строку 1 на вкладке Makhi-Bot и нажми «✅ Таблица исправлена».",
 	},
 }
 

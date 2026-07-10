@@ -102,6 +102,43 @@ func TestHeaderRowMatchesColumns(t *testing.T) {
 	}
 }
 
+// The startup header guard rests on these two pure checks: an empty existing
+// header is safe to write, and only a same-length, cell-for-cell match counts as
+// equal (so a rename or an added/removed column trips the pause).
+func TestHeaderEmptyAndEqual(t *testing.T) {
+	if !headerEmpty(nil) {
+		t.Error("nil header should be empty")
+	}
+	if !headerEmpty([]any{"", "  ", ""}) {
+		t.Error("all-blank header should be empty")
+	}
+	if headerEmpty([]any{"", "Date"}) {
+		t.Error("header with a label should not be empty")
+	}
+
+	want := headerRow()
+	if !headerEqual(want, want) {
+		t.Error("a header should equal itself")
+	}
+	// A fresh read comes back as strings; the schema stores strings too, but
+	// compare a rebuilt string slice to be explicit about the string path.
+	sameStrings := make([]any, len(want))
+	for i, c := range want {
+		sameStrings[i] = c.(string)
+	}
+	if !headerEqual(want, sameStrings) {
+		t.Error("equal cell values should compare equal")
+	}
+	if headerEqual(want, want[:len(want)-1]) {
+		t.Error("a shorter header should not be equal (a column was dropped)")
+	}
+	renamed := append([]any(nil), want...)
+	renamed[0] = "Datum"
+	if headerEqual(want, renamed) {
+		t.Error("a renamed column should not be equal")
+	}
+}
+
 // The core of the split: a Sleep submission fills only sleep columns, and a later
 // Day submission merges into the same row without touching the sleep columns.
 func TestMergeSleepThenDay(t *testing.T) {

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"strings"
+	"sync/atomic"
 	"time"
 
 	tgbotapi "github.com/OvyFlash/telegram-bot-api"
@@ -18,13 +19,31 @@ type server struct {
 	ownerID     int64          // Telegram user id allowed to use the bot; 0 = open (setup mode)
 	medications string         // the drugs the form offers to pick from (MEDICATIONS in .env)
 	location    *time.Location // time zone for reminders and dates (TIMEZONE in .env)
+
+	// paused is set when the sheet's header row differs from the schema at
+	// startup: while paused the bot ignores forms and reminders (saving would
+	// land data in the wrong columns) until the owner presses "the table is
+	// fixed". Read/written from both the update loop and the reminders goroutine,
+	// so it's atomic.
+	paused atomic.Bool
 }
 
 const isoDate = "2006-01-02"
 
+// callbackTableFixed is the inline-button data for "the table is fixed" — the
+// owner presses it after reconciling the sheet header, and the bot then rewrites
+// row 1 and resumes normal work.
+const callbackTableFixed = "table_fixed"
+
 // --- routing ---
 
 func (s *server) handleUpdate(update tgbotapi.Update) {
+	// Inline-button presses (currently only "the table is fixed") arrive as
+	// callback queries, not messages.
+	if update.CallbackQuery != nil {
+		s.handleCallback(update.CallbackQuery)
+		return
+	}
 	if update.Message == nil {
 		return
 	}
@@ -33,11 +52,95 @@ func (s *server) handleUpdate(update tgbotapi.Update) {
 	}
 	s.rememberChat(update.Message.Chat.ID)
 
+	// While paused for a header mismatch, ignore normal traffic: the sheet's
+	// columns don't line up with the schema, so saving would misplace data. The
+	// bot only resumes when the owner presses "the table is fixed".
+	if s.paused.Load() {
+		s.reply(update.Message.Chat.ID, translate("header_paused"))
+		return
+	}
+
 	if update.Message.WebAppData != nil {
 		s.handleWebAppData(update.Message)
 		return
 	}
 	s.handleCommand(update.Message)
+}
+
+// handleCallback handles inline-button presses. The only button is "the table is
+// fixed": the owner presses it after reconciling the sheet header, and we then
+// rewrite row 1 to the schema and lift the pause so normal work resumes.
+func (s *server) handleCallback(cb *tgbotapi.CallbackQuery) {
+	if s.ownerID != 0 && (cb.From == nil || cb.From.ID != s.ownerID) {
+		return
+	}
+	if cb.Data != callbackTableFixed {
+		return
+	}
+	// Acknowledge the tap so Telegram stops the button's loading spinner.
+	_, _ = s.bot.Request(tgbotapi.NewCallback(cb.ID, ""))
+
+	if !s.paused.Load() {
+		return // already running — nothing to do
+	}
+	if err := syncHeader(headerRow()); err != nil {
+		log.Printf("could not sync the header after a fix: %v", err)
+		if cb.Message != nil {
+			s.reply(cb.Message.Chat.ID, translate("form_error"))
+		}
+		return
+	}
+	s.paused.Store(false)
+	log.Print("header synced after a manual fix — resuming normal work")
+	if cb.Message != nil {
+		s.reply(cb.Message.Chat.ID, translate("header_synced"))
+	}
+}
+
+// syncOrPauseForHeader writes the schema's header into row 1 at startup — unless
+// the sheet already has a DIFFERENT non-empty header. In that case it doesn't
+// overwrite: it pauses the bot and asks the owner to reconcile the table first
+// (see pauseForHeaderMismatch). A read error is returned so the caller can log it;
+// the header is then left untouched.
+func (s *server) syncOrPauseForHeader() error {
+	existing, err := readHeaderRow()
+	if err != nil {
+		return err
+	}
+	want := headerRow()
+	if !headerEmpty(existing) && !headerEqual(existing, want) {
+		log.Print("sheet header differs from the schema — pausing until the owner fixes the table")
+		s.pauseForHeaderMismatch(want)
+		return nil
+	}
+	return syncHeader(want)
+}
+
+// pauseForHeaderMismatch stops normal work and messages the owner the header the
+// schema expects, with a "the table is fixed" button. The bot stays paused until
+// that button is pressed (handled in handleCallback).
+func (s *server) pauseForHeaderMismatch(newHeader []any) {
+	s.paused.Store(true)
+
+	// Prefer the remembered reminder chat; fall back to the owner id, which in a
+	// private chat is also the chat id.
+	chatID := getSettings().ChatID
+	if chatID == 0 {
+		chatID = s.ownerID
+	}
+	if chatID == 0 {
+		log.Print("header mismatch, but there's no chat to notify yet — message the bot " +
+			"once, then fix the header and restart")
+		return
+	}
+
+	msg := tgbotapi.NewMessage(chatID, fmt.Sprintf(translate("header_mismatch"), formatHeader(newHeader)))
+	msg.ReplyMarkup = tgbotapi.NewInlineKeyboardMarkup(
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData(translate("header_fix_button"), callbackTableFixed),
+		),
+	)
+	s.send(msg)
 }
 
 func (s *server) handleCommand(message *tgbotapi.Message) {

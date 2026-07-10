@@ -38,10 +38,6 @@ func main() {
 	}
 	log.Printf("Bot started: @%s", bot.Self.UserName)
 
-	if err := syncHeader(headerRow()); err != nil {
-		log.Printf("could not sync the header row: %v", err)
-	}
-
 	loadSettings()
 	srv := &server{
 		bot:       bot,
@@ -54,6 +50,14 @@ func main() {
 		// VM is usually UTC). See loadLocation.
 		location: loadLocation(os.Getenv("TIMEZONE")),
 	}
+
+	// Sync the header row into row 1 — but if the sheet already has a *different*
+	// non-empty header, don't overwrite it. Instead the bot messages the owner the
+	// expected header and pauses until they fix the table and press the button.
+	if err := srv.syncOrPauseForHeader(); err != nil {
+		log.Printf("could not sync the header row: %v", err)
+	}
+
 	go srv.runReminders()
 
 	updates := tgbotapi.NewUpdate(0)

@@ -98,6 +98,45 @@ func headerRow() []any {
 	return row
 }
 
+// headerEmpty reports whether a header row read from the sheet carries no labels
+// at all — a fresh tab. Blank cells count as empty, so an all-blank row is empty
+// too. We treat an empty header as safe to write (nothing to overwrite).
+func headerEmpty(header []any) bool {
+	for _, cell := range header {
+		if strings.TrimSpace(fmt.Sprint(cell)) != "" {
+			return false
+		}
+	}
+	return true
+}
+
+// headerEqual reports whether an existing header row matches the schema's header
+// cell for cell (compared as trimmed strings). A different length counts as
+// different — e.g. a column was added or removed.
+func headerEqual(existing, want []any) bool {
+	if len(existing) != len(want) {
+		return false
+	}
+	for i := range want {
+		if strings.TrimSpace(fmt.Sprint(existing[i])) != strings.TrimSpace(fmt.Sprint(want[i])) {
+			return false
+		}
+	}
+	return true
+}
+
+// formatHeader renders a header row for a chat message: one column per line, each
+// prefixed with its spreadsheet column letter (A, B, C…), so the owner can line
+// the sheet's header up with the schema. Assumes ≤ 26 columns, like the rest of
+// the A1 handling (see lastColumnLetter).
+func formatHeader(header []any) string {
+	lines := make([]string, len(header))
+	for i, cell := range header {
+		lines[i] = fmt.Sprintf("%c: %s", 'A'+i, cell)
+	}
+	return strings.Join(lines, "\n")
+}
+
 // mergeRow overlays one form's answers onto an existing row (nil for a new day):
 // columns owned by the submitting part — plus meta columns — get fresh values;
 // every other column keeps what was already there. This is what lets the sleep and

@@ -126,6 +126,31 @@ func updateRow(rowNumber int, values []any) error {
 	return nil
 }
 
+// headerRange is row 1 across every schema column, e.g. "'Makhi-Bot'!A1:X1".
+func headerRange() string {
+	return tabRange(fmt.Sprintf("A1:%s1", lastColumnLetter()))
+}
+
+// readHeaderRow reads the sheet's current header (row 1) so startup can compare it
+// against the schema before overwriting. It returns a nil row when the tab has no
+// header yet (a fresh sheet); cells come back as strings, ready for headerEqual.
+func readHeaderRow() ([]any, error) {
+	srv, err := service()
+	if err != nil {
+		return nil, err
+	}
+	resp, err := srv.Spreadsheets.Values.
+		Get(spreadsheetID, headerRange()).
+		Do()
+	if err != nil {
+		return nil, fmt.Errorf("reading the header row: %w", err)
+	}
+	if len(resp.Values) == 0 {
+		return nil, nil
+	}
+	return resp.Values[0], nil
+}
+
 // syncHeader writes the current column headers into row 1. This is
 // non-destructive — row 1 holds only labels, never data — so it keeps the
 // sheet's header in step with the code as columns are renamed or appended,
@@ -135,9 +160,8 @@ func syncHeader(header []any) error {
 	if err != nil {
 		return err
 	}
-	rng := tabRange(fmt.Sprintf("A1:%s1", lastColumnLetter()))
 	_, err = srv.Spreadsheets.Values.
-		Update(spreadsheetID, rng, &sheets.ValueRange{Values: [][]any{header}}).
+		Update(spreadsheetID, headerRange(), &sheets.ValueRange{Values: [][]any{header}}).
 		ValueInputOption("RAW").
 		Do()
 	if err != nil {
