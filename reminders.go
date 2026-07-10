@@ -30,7 +30,7 @@ func (s *server) runReminders() {
 		}
 
 		now := s.now()
-		hhmm := now.Format("15:04")
+		hhmm := now.Format(clockLayout)
 		today := now.Format(isoDate)
 		cfg := getSettings()
 
@@ -101,7 +101,7 @@ func setReminderTime(slot string, fields []string) string {
 		return translate("settings_usage")
 	}
 	value := fields[1]
-	if _, err := time.Parse("15:04", value); err != nil {
+	if _, err := time.Parse(clockLayout, value); err != nil {
 		return translate("settings_bad_time")
 	}
 	err := saveSettings(func(cfg *settings) {

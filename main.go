@@ -9,10 +9,31 @@ import (
 	"github.com/joho/godotenv"
 )
 
-// sheetTab is the tab (worksheet) the bot reads and writes in the spreadsheet.
-// Change it here if you rename the tab; every Sheets range is built from it (see
-// tabRange in sheets.go). It's single-quoted in ranges because of the hyphen.
-const sheetTab = "Makhi-Bot"
+// Configuration constants — the bot's tunable text values, gathered here in one
+// place. Change a value and rebuild; nothing else hard-codes these strings.
+const (
+	// sheetTab is the tab (worksheet) the bot reads and writes in the spreadsheet.
+	// Every Sheets range is built from it (see tabRange in sheets.go); it's
+	// single-quoted in ranges because of the hyphen. Change it if you rename the tab.
+	sheetTab = "Makhi-Bot"
+
+	// spreadsheetID identifies the Google Sheet (from its URL, between /d/ and /edit).
+	spreadsheetID = "1bpCNYzsXwgHFLL4ylm3g3Smsb140kMUYKx2zcViEZAw"
+
+	// settingsFile holds the bot's local runtime state — the reminder chat id and
+	// times. It's gitignored (the chat id is private).
+	settingsFile = "settings.json"
+
+	// Default reminder times (HH:MM, in the configured time zone), used until the
+	// owner changes them via /evening and /afternoon.
+	defaultEveningReminder   = "21:00"
+	defaultAfternoonReminder = "14:00"
+
+	// Go reference-time layouts (see the time package) for formatting and parsing.
+	isoDate         = "2006-01-02"          // date-only; sheet dates and form dates
+	clockLayout     = "15:04"               // HH:MM; reminder times
+	timestampLayout = "2006-01-02 15:04:05" // the "Last modified" cell
+)
 
 func main() {
 	_ = godotenv.Load() // .env holds BOT_TOKEN / WEB_APP_URL / BOT_LANGUAGE (gitignored)

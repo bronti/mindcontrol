@@ -28,8 +28,6 @@ type server struct {
 	paused atomic.Bool
 }
 
-const isoDate = "2006-01-02"
-
 // callbackTableFixed is the inline-button data for "the table is fixed" — the
 // owner presses it after reconciling the sheet header, and the bot then rewrites
 // row 1 and resumes normal work.
@@ -265,7 +263,7 @@ func (s *server) handleFormSubmission(message *tgbotapi.Message) {
 		return
 	}
 
-	a.LastModified = s.now().Format("2006-01-02 15:04:05")
+	a.LastModified = s.now().Format(timestampLayout)
 	merged := mergeRow(existing, a, a.FormType)
 	if rowNum != 0 {
 		err = updateRow(rowNum, merged)

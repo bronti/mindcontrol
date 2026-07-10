@@ -6,10 +6,9 @@ import (
 	"sync"
 )
 
-// settings.json holds the bot's local runtime state: which chat to send
-// reminders to, and at what times. It's gitignored (the chat id is private).
-const settingsFile = "settings.json"
-
+// settings holds the bot's local runtime state — which chat to send reminders to,
+// and at what times. It's persisted to settingsFile (see main.go), which is
+// gitignored because the chat id is private.
 type settings struct {
 	ChatID            int64  `json:"chat_id"`            // where to send reminders (learned from messages)
 	EveningReminder   string `json:"evening_reminder"`   // "HH:MM", the daily nudge
@@ -27,17 +26,17 @@ func loadSettings() {
 	settingsMu.Lock()
 	defer settingsMu.Unlock()
 
-	currentConfig = settings{EveningReminder: "21:00", AfternoonReminder: "14:00"}
+	currentConfig = settings{EveningReminder: defaultEveningReminder, AfternoonReminder: defaultAfternoonReminder}
 	data, err := os.ReadFile(settingsFile)
 	if err != nil {
 		return // no file yet — defaults stand
 	}
 	_ = json.Unmarshal(data, &currentConfig)
 	if currentConfig.EveningReminder == "" {
-		currentConfig.EveningReminder = "21:00"
+		currentConfig.EveningReminder = defaultEveningReminder
 	}
 	if currentConfig.AfternoonReminder == "" {
-		currentConfig.AfternoonReminder = "14:00"
+		currentConfig.AfternoonReminder = defaultAfternoonReminder
 	}
 }
 

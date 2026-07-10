@@ -12,9 +12,6 @@ import (
 	"google.golang.org/api/sheets/v4"
 )
 
-// ID of the Google Sheet (from the URL, between /d/ and /edit).
-const spreadsheetID = "1bpCNYzsXwgHFLL4ylm3g3Smsb140kMUYKx2zcViEZAw"
-
 // The Sheets client is created once and reused: building it sets up authentication
 // and an HTTP client, which we don't want to redo on every call.
 var (
