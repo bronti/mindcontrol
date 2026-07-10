@@ -28,10 +28,10 @@ type server struct {
 	paused atomic.Bool
 }
 
-// callbackTableFixed is the inline-button data for "the table is fixed" — the
-// owner presses it after reconciling the sheet header, and the bot then rewrites
-// row 1 and resumes normal work.
-const callbackTableFixed = "table_fixed"
+// callbackHeaderVerified is the inline-button data for the header-mismatch pause.
+// The owner presses it once they've verified the sheet's data lines up with the
+// new columns; the bot then overwrites row 1 with the schema header and resumes.
+const callbackHeaderVerified = "header_verified"
 
 // --- routing ---
 
@@ -65,14 +65,15 @@ func (s *server) handleUpdate(update tgbotapi.Update) {
 	s.handleCommand(update.Message)
 }
 
-// handleCallback handles inline-button presses. The only button is "the table is
-// fixed": the owner presses it after reconciling the sheet header, and we then
-// rewrite row 1 to the schema and lift the pause so normal work resumes.
+// handleCallback handles inline-button presses. The only button belongs to the
+// header-mismatch pause: the owner presses it once they've verified the sheet's
+// data matches the new columns, and we then overwrite row 1 with the schema
+// header and lift the pause so normal work resumes.
 func (s *server) handleCallback(cb *tgbotapi.CallbackQuery) {
 	if s.ownerID != 0 && (cb.From == nil || cb.From.ID != s.ownerID) {
 		return
 	}
-	if cb.Data != callbackTableFixed {
+	if cb.Data != callbackHeaderVerified {
 		return
 	}
 	// Acknowledge the tap so Telegram stops the button's loading spinner.
@@ -134,7 +135,7 @@ func (s *server) pauseForHeaderMismatch(newHeader []any) {
 	msg := tgbotapi.NewMessage(chatID, fmt.Sprintf(translate("header_mismatch"), formatHeader(newHeader)))
 	msg.ReplyMarkup = tgbotapi.NewInlineKeyboardMarkup(
 		tgbotapi.NewInlineKeyboardRow(
-			tgbotapi.NewInlineKeyboardButtonData(translate("header_fix_button"), callbackTableFixed),
+			tgbotapi.NewInlineKeyboardButtonData(translate("header_verify_button"), callbackHeaderVerified),
 		),
 	)
 	s.send(msg)
